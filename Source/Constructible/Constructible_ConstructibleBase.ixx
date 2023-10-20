@@ -21,4 +21,6 @@ export class ConstructibleBase
 	//
 
 	//container to 
+public:
+	virtual ~ConstructibleBase() = default;
 };

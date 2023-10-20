@@ -6,98 +6,123 @@ export import Resources.Types;
 import <atomic>;
 import <utility>;
 import <tuple>;
+import <algorithm>;
+import <cassert>;
+import <stdexcept>;
 
 export template<ResourceType Type>
 struct ResourceInfo {
-	const float _amount;
+	const float amount_;
 	constexpr ResourceInfo(float amount = 0.f) :
-		_amount{ amount } 
+		amount_{ amount } 
 	{
-		static_assert(_amount > 0.f);
+
 	};
 };
 
-export template<ResourceType Type>
-class ResourceContainerT {
+export class ResourceContainer{
+	std::atomic<float> amount_;
 
-	std::atomic<float> _amount;
-	
+protected:
+
+	constexpr ResourceContainer(float range, float amount = 0.f) noexcept(false) :
+		amount_{ amount }, range_{ range }
+	{
+		if (range < amount || range <= 0.f) {
+			throw std::invalid_argument{"range must be positive and not less then amount"};
+		}
+	};
+
 public:
-	const float _range;
+	const float range_;
 
-	ResourceContainerT() = delete;
+	ResourceContainer() = delete;
+	virtual ~ResourceContainer() = default;
 
-	constexpr ResourceContainerT(float range, float amount = 0.f) :
-		_amount{ amount }, _range{ range }
-	{
-		static_assert(range >= amount && range > 0.f);
-	};
-	//ResourceContainerD(const std::pair<float, float>& amountRange, float amount = 0.f);
-
-	//flag as param?
-	ResourceType GetType() const&
-	{
-		return Type;
-	};
+	virtual ResourceType GetType() const& = 0;
 
 	float GetAmount() const& {
-		return _amount.load();
-	}
+		return amount_.load();
+	};
+
+	float GetFreeSpace() const& {
+		return range_ - amount_.load();
+	};
 
 	float RequestResource(float amount, bool acceptLower = false)&
 	{
 
 	};
+
+	float ChangeAmount(float amount)& {
+
+		float oldVal{ amount_.load() };
+		float newVal{ std::clamp(oldVal + amount, 0.f, range_) };
+
+		while (!amount_.compare_exchange_weak(oldVal, newVal))
+		{
+			newVal = std::clamp(oldVal + amount, 0.f, range_);
+		}
+
+		return newVal - oldVal;
+	};
+
 };
 
-//https://ru.wikipedia.org/wiki/Curiously_recurring_template_pattern base?
-export class ResourceContainerD {
-
-	std::atomic<ResourceType> _type;
-	std::atomic<float> _amount;
-	
+export template<ResourceType Type>
+class ResourceContainerT : public ResourceContainer
+{
 public:
-	const float _range;
+
+	ResourceContainerT() = delete;
+
+	constexpr ResourceContainerT(float range, float amount = 0.f) :
+		ResourceContainer(range, amount)
+	{
+		static_assert(range >= amount && range > 0.f);
+	};
+
+	virtual ResourceType GetType() const& override
+	{
+		return Type;
+	};
+};
+
+export class ResourceContainerD : public ResourceContainer
+{
+	std::atomic<ResourceType> _type;	
+public:
 
 	ResourceContainerD() = delete;
 
 	template<ResourceType Type>
 	ResourceContainerD(const ResourceContainerT<Type>& container) :
-		_type{ Type }, _amount{ container.GetAmount() }, _range{ container._range }
+		ResourceContainer(container._range, container.GetAmount()), _type{ Type }
 	{
 
 	};
 
 	template<ResourceType Type>
 	ResourceContainerD(const ResourceInfo<Type>& info, float range) :
-		_type{ Type }, _amount{ info._amount }, _range{ range }
+		ResourceContainer(range, info.amount_), _type{ Type }
 	{
 
 	};
-	//ResourceContainerD(const std::pair<float, float>& amountRange, float amount = 0.f);
-	
-	//flag as param?
-	ResourceType GetType() const &
+
+	virtual ResourceType GetType() const & override
 	{
 		return _type.load();
 	};
-
-
-	float RequestResource(float amount, bool acceptLower = false) & 
-	{
-
-	};
 };
-
 
 
 //using ResourceInfo = std::pair<ResourceType, float>;
 
 /*struct ResourceInfo {
 	const ResourceType _type;
-	const float _amount;
+	const float amount_;
 	constexpr ResourceInfo(ResourceType type, float amount) :
-		_type{ type }, _amount{ amount } {};
+		_type{ type }, amount_{ amount } {};
 };*/
 
 template <typename... Args>
@@ -112,18 +137,18 @@ class ResoursePack {
 	using ResourcePackType = decltype(std::tuple<decltype(ResourceInfo<Types>{}) ...>());
 
 public:
-	const ResourcePackType _amounts;
+	const ResourcePackType amounts_;
 
 	ResoursePack() = delete;
 
 	template<class... Values> requires SameInts<sizeof...(Values), sizeof...(Types)>
-	//explicit ResoursePack(Values... amounts) : _amounts { {Types, amounts}...} {
+	//explicit ResoursePack(Values... amounts) : amounts_ { {Types, amounts}...} {
 	constexpr explicit ResoursePack(Values... amounts) : 
-		_amounts { (ResourceInfo<Types>{amounts})...} {
+		amounts_ { (ResourceInfo<Types>{amounts})...} {
 	}
 
 	template<ResourceType Type>
 	constexpr float GetResourceAmount() const {
-		return std::get<ResourceInfo<Type>>(_amounts)._amount;
+		return std::get<ResourceInfo<Type>>(amounts_).amount_;
 	}
 };
