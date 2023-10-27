@@ -1,17 +1,18 @@
-// by Dmitry Kolontay
+﻿// by Dmitry Kolontay
 
 export module Constructible.Worker;
+export import Constructible.Worker.WorkOrder;
 export import Constructible.ConstructibleBase;
 
 import Resources;
+import Utils;
 
 import <memory>;
-import <cmath>;
+//import <cmath>;
 import <cassert>;
 import <algorithm>;
 import <atomic>;
 import <stdexcept>;
-
 
 enum class WorkerStatus
 {
@@ -22,45 +23,11 @@ enum class WorkerStatus
 	Malfunction,
 };
 
-export class WorkOrder {
-	
-	std::atomic<float> requestedAmount_;
-
-public:
-	using ContainerPtr = std::weak_ptr<ResourceContainerD>;
-	const ContainerPtr source_;
-	const ContainerPtr target_;
-	const ContainerPtr fallback_;
-
-	void ChangeAmount(float amount)& {
-		requestedAmount_.fetch_add(amount);
-	};
-
-
-	WorkOrder(ContainerPtr&& source, ContainerPtr&& target,
-		ContainerPtr&& fallback, float requestedAmount) noexcept(false) :
-		source_{source}, target_{ target }, fallback_{ fallback }, 
-		requestedAmount_{ requestedAmount }
-	{
-		if (requestedAmount_ <= 0.f) {
-			throw std::invalid_argument{"requestedAmount must be positive"};
-		}
-		/*if (!source_.operator bool() || source_.expired() || !target_ || target_.expired()) {
-			throw std::invalid_argument{ "containers are not of the same type" };
-		}
-		if (source_->GetType() != target_->GetType() != fallback_->GetType()) {
-			throw std::invalid_argument{ "containers are not of the same type" };
-		}*/
-	}
-};
-
 //what should be atomic?
 export class Worker : public ConstructibleBase
 {
-	//class job task?
 	std::weak_ptr<WorkOrder> order_;
-
-	float requestedAmount;
+	std::weak_ptr<WorkOrder> nextOrder_;
 
 	ResourceContainerD storage_;
 
@@ -72,29 +39,35 @@ export class Worker : public ConstructibleBase
 	//self container
 	//on job finished
 	void OnWorkCompletion();
-	void OnChangeover(float deltatime);
-	
+
+	//returns time left
+	float OnChangeover(float deltatime);
+	//returns time left
 	float LoadFrom(float deltatime);
+	//returns time left
 	float UnloadTo(float deltatime);
 
-public:
+	void StartChangeover();
+	void StartChangeover(float initTime);
 
-	bool StartWorking(std::weak_ptr<ResourceContainerD>&& source, std::weak_ptr<ResourceContainerD>&& target)&;
-	bool FinishWorking()&;
+public:
+	bool AssignWorkOrder(const std::shared_ptr<WorkOrder>& order)&;
+	void FinishWorking()&;
 
 	void Tick(float deltatime)&;
 };
 
 void Worker::Tick(float deltatime)&
 {
-	assert(deltatime >= 0.f);
-
+	assert(deltatime > 0.f);
+	//decrease power
 	switch (status_) {
 	case WorkerStatus::Changeover:
 		{
 			float timeLeft{ deltatime - timer_.ChangeAmount(deltatime) };
 			//CHANGE STATUS
-			if (std::fabsf(timeLeft) > 0.001) {
+			if (Utils::NotNegligibleTime(timeLeft)) {
+
 				Tick(timeLeft);
 			}
 		}
@@ -114,59 +87,111 @@ void Worker::Tick(float deltatime)&
 
 void Worker::OnWorkCompletion()
 {
-
+	//try return resources?
 }
 
-void Worker::OnChangeover(float deltatime)
+void Worker::StartChangeover()
+{
+	status_ = WorkerStatus::Changeover;
+	//redo
+	timer_.Reset();
+}
+
+void Worker::StartChangeover(float initTime)
+{
+	status_ = WorkerStatus::Changeover;
+	//redo
+	timer_.Reset();
+	OnChangeover(initTime);
+}
+
+float Worker::OnChangeover(float deltatime)
 {
 	assert(deltatime >= 0.f && status_ == WorkerStatus::Changeover);
 
-	float timeLeft{ deltatime - timer_.ChangeAmount(deltatime) };
-	if (std::fabsf(timeLeft) > 0.001) {
-		Tick(timeLeft);
-	}
+	return deltatime - timer_.ChangeAmount(deltatime);
 }
 
+//no amount check!
 float Worker::LoadFrom(float deltatime)
 {
 	assert(deltatime >= 0.f && status_ == WorkerStatus::Loading);
 
-	float availableSpace{ storage_.GetFreeSpace() };
-	float workAvailable{ deltatime * workRate };
-	/*ADD requestedAmount
-	float workRequested{ std::min(availableSpace, workAvailable) };
-	float workDone{ 0.f };
-
-	if (auto lockedSouce{ order_.lock() }) {
-		workDone = -1.f * lockedSouce->ChangeAmount(-1.f * workRequested);
+	/*if (auto order{ order_.lock() }) {
+		float workDone{ order->RequestFromSource(
+			std::min(storage_.GetFreeSpace(), deltatime * workRate)) };
+		storage_.ChangeAmount(workDone);
+		return deltatime - workDone / workRate;
 	}
 	else {
-		//try to return?
+		return deltatime;
+	}*/
+	float workDone{ 0.f };
+	if (auto order{ order_.lock() }) {
+		workDone = order->RequestFromSource(
+			std::min(storage_.GetFreeSpace(), deltatime * workRate));
 	}
-
-	requestedAmount -= workDone;
-	//float */
-	return 0.0f;
+	else {
+		return deltatime;
+	}
+	storage_.ChangeAmount(-1.f * workDone);
+	return deltatime - workDone / workRate;
 }
 
 float Worker::UnloadTo(float deltatime)
 {
 	assert(deltatime >= 0.f && status_ == WorkerStatus::Unloading);
 
-	/*float availableSpace{ storage_.GetFreeSpace() };
-	float workAvailable{ std::min(deltatime * workRate, storage_.GetFreeSpace()) };
-	//ADD requestedAmount
-	//float workRequested{ std::min(availableSpace, workAvailable) };
-	float workDone{ 0.f };
-
-	if (auto lockedTaget{ target_.lock() }) {
-		workDone = lockedTaget->ChangeAmount(workAvailable);
+	/*if (auto order{ order_.lock() }) {
+		float workDone{ order->UnloadToTarget(
+			std::min(storage_.GetAmount(), deltatime * workRate), true) };
+		storage_.ChangeAmount(-1.f * workDone);
+		return deltatime - workDone / workRate;
 	}
 	else {
-		//try to return?
+		return deltatime;
 	}
-
-	requestedAmount -= workDone;
 	*/
-	return 0.0f;
+	float workDone{ 0.f };
+	if (auto order{ order_.lock() }) {
+		workDone = order->UnloadToTarget(
+			std::min(storage_.GetAmount(), deltatime * workRate), true);
+	}
+	else {
+		return deltatime;
+	}
+	storage_.ChangeAmount(-1.f * workDone);
+	return deltatime - workDone / workRate;
+}
+
+bool Worker::AssignWorkOrder(const std::shared_ptr<WorkOrder>& order)&
+{
+	switch (status_) {
+	case WorkerStatus::Changeover:
+		[[fallthrough]];
+	case WorkerStatus::Loading:
+		[[fallthrough]];
+	case WorkerStatus::Unloading:
+		if (order_.lock() == order) {
+			break;
+		}
+		[[fallthrough]];
+	case WorkerStatus::Waiting:
+		StartChangeover();
+		[[fallthrough]];
+	case WorkerStatus::Malfunction:
+		[[fallthrough]];
+	default:
+		order_ = order;
+		break;
+	}
+	return true;
+}
+
+void Worker::FinishWorking()&
+{
+	order_.reset();
+	//try return resources?
+	status_ = WorkerStatus::Waiting;
+	
 }

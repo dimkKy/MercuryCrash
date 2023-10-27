@@ -18,9 +18,16 @@ export template <StructureType Type>
 };
 
 template<>
+class Structure<StructureType::Battery> : public ConstructibleBase
+{
+	ResourceContainerT<ResourceType::Power> powerStorage_;
+};
+
+template<>
 class Structure<StructureType::Cryochamber> : public ConstructibleBase
 {
-
+	ResourceContainerT<ResourceType::Heat> heatStorage_;
+	ResourceContainerT<ResourceType::Power> powerStorage_;
 };
 
 template<>
@@ -32,7 +39,7 @@ class Structure<StructureType::Reactor> : public ConstructibleBase
 template<>
 class Structure<StructureType::Hull> : public ConstructibleBase
 {
-	Structure<StructureType::Reactor> reactor_;
+
 	//Structure<StructureType::Hull> hull_;
 
 

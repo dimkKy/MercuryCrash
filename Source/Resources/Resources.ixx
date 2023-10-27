@@ -3,6 +3,8 @@
 export module Resources;
 export import Resources.Types;
 
+import Utils;
+
 import <atomic>;
 import <utility>;
 import <tuple>;
@@ -19,6 +21,11 @@ struct ResourceInfo {
 
 	};
 };
+
+//ADD NON-ATOMIC?
+//DYNAMIC NON ATOMIC +
+//TYPED NON ATOMIC +
+//!!!!!!
 
 export class ResourceContainer{
 	std::atomic<float> amount_;
@@ -42,30 +49,29 @@ public:
 	virtual ResourceType GetType() const& = 0;
 
 	float GetAmount() const& {
-		return amount_.load();
+		return amount_.load(std::memory_order_relaxed);
 	};
 
 	float GetFreeSpace() const& {
-		return range_ - amount_.load();
+		return range_ - GetAmount();
 	};
 
-	float RequestResource(float amount, bool acceptLower = false)&
-	{
-
-	};
-
+	//returns newVal - oldVal
 	float ChangeAmount(float amount)& {
-
-		float oldVal{ amount_.load() };
+		float oldVal{ GetAmount() };
 		float newVal{ std::clamp(oldVal + amount, 0.f, range_) };
 
-		while (!amount_.compare_exchange_weak(oldVal, newVal))
+		while (!amount_.compare_exchange_weak(oldVal, newVal, std::memory_order_acq_rel))
 		{
 			newVal = std::clamp(oldVal + amount, 0.f, range_);
 		}
 
 		return newVal - oldVal;
 	};
+
+	void Reset()& {
+		amount_.store(0.f, std::memory_order_release);
+	}
 
 };
 
@@ -79,7 +85,7 @@ public:
 	constexpr ResourceContainerT(float range, float amount = 0.f) :
 		ResourceContainer(range, amount)
 	{
-		static_assert(range >= amount && range > 0.f);
+		//static_assert(range >= amount && range > 0.f);
 	};
 
 	virtual ResourceType GetType() const& override
@@ -115,23 +121,7 @@ public:
 	};
 };
 
-
-//using ResourceInfo = std::pair<ResourceType, float>;
-
-/*struct ResourceInfo {
-	const ResourceType _type;
-	const float amount_;
-	constexpr ResourceInfo(ResourceType type, float amount) :
-		_type{ type }, amount_{ amount } {};
-};*/
-
-template <typename... Args>
-concept NonEmpty = sizeof...(Args) > 0;
-
-template <int a, int b>
-concept SameInts = a == b;
-
-export template<ResourceType... Types> requires NonEmpty<ResourceType>
+export template<ResourceType... Types> requires Utils::NonEmpty<ResourceType>
 class ResoursePack {
 	//using ResourcePackType = decltype(std::tuple(ResourceInfo{ Types, 0.f } ...));
 	using ResourcePackType = decltype(std::tuple<decltype(ResourceInfo<Types>{}) ...>());
@@ -141,7 +131,7 @@ public:
 
 	ResoursePack() = delete;
 
-	template<class... Values> requires SameInts<sizeof...(Values), sizeof...(Types)>
+	template<class... Values> requires Utils::SameInts<sizeof...(Values), sizeof...(Types)>
 	//explicit ResoursePack(Values... amounts) : amounts_ { {Types, amounts}...} {
 	constexpr explicit ResoursePack(Values... amounts) : 
 		amounts_ { (ResourceInfo<Types>{amounts})...} {
