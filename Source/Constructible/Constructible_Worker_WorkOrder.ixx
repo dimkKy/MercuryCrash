@@ -14,15 +14,13 @@ import <stdexcept>;
 */
 
 //build order and return order
+template<ResourceType Type>
+using ContainerPtrT = std::weak_ptr<ResourceContainerT<Type>>;
+using ContainerPtrD = std::weak_ptr<ResourceContainer>;
+
 export class WorkOrder {
-	std::atomic<float> requestedAmount_;
-
-	using ContainerPtr = std::weak_ptr<ResourceContainer>;
-	const ContainerPtr source_;
-	const ContainerPtr target_;
-	const ContainerPtr fallback_;
-
-	float UnloadTo(const ContainerPtr& to, float amount)& {
+protected:
+	float AddTo(const ContainerPtrD& to, float amount)& {
 		assert(amount >= 0.f);
 		if (auto target{ to.lock() }) {
 			return target->ChangeAmount(amount);
@@ -33,11 +31,11 @@ export class WorkOrder {
 	}
 
 public:
-	WorkOrder(ContainerPtr&& source, ContainerPtr&& target, float requestedAmount) noexcept(false) :
-		WorkOrder(std::move(source), std::move(target), std::move(ContainerPtr{}), requestedAmount) {}
+	/*WorkOrder(ContainerPtrD&& source, ContainerPtrD&& target, float requestedAmount) noexcept(false) :
+		WorkOrder(std::move(source), std::move(target), std::move(ContainerPtrD{}), requestedAmount) {}
 
-	WorkOrder(ContainerPtr&& source, ContainerPtr&& target,
-		ContainerPtr&& fallback, float requestedAmount) noexcept(false) :
+	WorkOrder(ContainerPtrD&& source, ContainerPtrD&& target,
+		ContainerPtrD&& fallback, float requestedAmount) noexcept(false) :
 		source_{ source }, target_{ target }, fallback_{ fallback },
 		requestedAmount_{ requestedAmount }
 	{
@@ -49,24 +47,62 @@ public:
 		}
 		if (source_->GetType() != target_->GetType() != fallback_->GetType()) {
 			throw std::invalid_argument{ "containers are not of the same type" };
-		}*/
-	}
+		}*
+	}*/
 
 	//returns amount acquired (positive)
-	float RequestFromSource(float amount)& {
+	virtual float RequestFromSource(float amount) & = 0;
+
+	virtual float UnloadToTarget(float amount, bool bAllowReturn) & = 0;
+	virtual ~WorkOrder() = default;
+};
+
+export class BuildOrder : WorkOrder {
+	const ContainerPtrT<ResourceType::Time> timer_;
+	const ContainerPtrT<ResourceType::Conductor> conductor_;
+	const ContainerPtrT<ResourceType::Composite> composite_;
+
+
+	//TODO
+public:
+	virtual float RequestFromSource(float amount) & override {
+
+	}
+
+	virtual float UnloadToTarget(float amount, bool bAllowReturn) & override {
+
+	}
+};
+
+export class TransferOrder : WorkOrder {
+	std::atomic<float> requestedAmount_;
+
+	const ContainerPtrD source_;
+	const ContainerPtrD target_;
+	const ContainerPtrD fallback_;
+
+public:
+
+	float GetAmount() const& {
+		return requestedAmount_.load(std::memory_order_relaxed);
+	}
+
+	virtual float RequestFromSource(float amount) & override {
+		using namespace std;
 		assert(amount >= 0.f);
 		if (auto source{ source_.lock() }) {
 
 			float workLeft{ GetAmount() };
-			float availableAmount{ std::min(amount, workLeft) };
+			float amountLeft{ min(amount, workLeft) };
 
-			while (!requestedAmount_.compare_exchange_weak(workLeft, workLeft - availableAmount)) {
-				availableAmount = std::min(amount, workLeft);
+			while (!requestedAmount_.compare_exchange_weak(
+				workLeft, workLeft - amountLeft)) {
+				amountLeft = min(amount, workLeft);
 			}
 
-			float amountGot{ -1.f * source->ChangeAmount(-1.f * availableAmount) };
+			float amountGot{ -1.f * source->ChangeAmount(-1.f * amountLeft) };
 
-			requestedAmount_.fetch_add(availableAmount - amountGot, std::memory_order_acq_rel);
+			requestedAmount_.fetch_add(amountLeft - amountGot, memory_order_acq_rel);
 			return amountGot;
 		}
 		else {
@@ -74,27 +110,13 @@ public:
 		}
 	}
 
-	float UnloadToTarget(float amount, bool bAllowReturn)& {
+	virtual float UnloadToTarget(float amount, bool bAllowReturn) & override {
 		assert(amount >= 0.f);
-		float unloadedAmount{ UnloadTo(target_, amount) };
+		float unloadedAmount{ AddTo(target_, amount) };
 		if (bAllowReturn) {
-			unloadedAmount += UnloadTo(source_, amount - unloadedAmount);
-			unloadedAmount += UnloadTo(fallback_, amount - unloadedAmount);
+			unloadedAmount += AddTo(source_, amount - unloadedAmount);
+			unloadedAmount += AddTo(fallback_, amount - unloadedAmount);
 		}
 		return unloadedAmount;
 	}
-
-	float GetAmount() const& {
-		return requestedAmount_.load(std::memory_order_relaxed);
-	}
-
-	virtual ~WorkOrder() = default;
-};
-
-export class BuildOrder : WorkOrder {
-
-};
-
-export class TransferOrder : WorkOrder {
-
 };

@@ -128,7 +128,7 @@ class ResoursePack {
 
 public:
 	const ResourcePackType amounts_;
-
+	
 	ResoursePack() = delete;
 
 	template<class... Values> requires Utils::SameInts<sizeof...(Values), sizeof...(Types)>

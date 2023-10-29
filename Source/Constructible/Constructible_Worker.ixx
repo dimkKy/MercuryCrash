@@ -45,7 +45,7 @@ export class Worker : public ConstructibleBase
 	//returns time left
 	float LoadFrom(float deltatime);
 	//returns time left
-	float UnloadTo(float deltatime);
+	float AddTo(float deltatime);
 
 	void StartChangeover();
 	void StartChangeover(float initTime);
@@ -76,7 +76,7 @@ void Worker::Tick(float deltatime)&
 		LoadFrom(deltatime);
 		break;
 	case WorkerStatus::Unloading:
-		UnloadTo(deltatime);
+		AddTo(deltatime);
 		break;
 	default:
 		//untick?
@@ -138,7 +138,7 @@ float Worker::LoadFrom(float deltatime)
 	return deltatime - workDone / workRate;
 }
 
-float Worker::UnloadTo(float deltatime)
+float Worker::AddTo(float deltatime)
 {
 	assert(deltatime >= 0.f && status_ == WorkerStatus::Unloading);
 

@@ -1,3 +1,5 @@
+// by Dmitry Kolontay
+
 export module Utils;
 
 import <cmath>;

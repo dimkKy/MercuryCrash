@@ -4,6 +4,12 @@
 import <iostream>;
 import Resources;
 
+//#define COMMANDS_COUNT_INIT 0
+
+//#define COMMANDS_COUNT COMMANDS_COUNT_INIT+1
+//#define COMMANDS_COUNT COMMANDS_COUNT_INIT+2
+//#redefine COMMANDS_COUNT COMMANDS_COUNT_INIT+3
+
 int main()
 {
     //ResourceContainerD<ResourceType::Heat> container;
