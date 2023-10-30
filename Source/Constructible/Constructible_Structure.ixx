@@ -1,7 +1,7 @@
 // by Dmitry Kolontay
 
 export module Constructible.Structure;
-export import Constructible.ConstructibleBase;
+import Constructible.ConstructibleBase;
 
 export enum class StructureType {
 	Battery,
@@ -20,14 +20,14 @@ export template <StructureType Type>
 template<>
 class Structure<StructureType::Battery> : public ConstructibleBase
 {
-	ResourceContainerT<ResourceType::Power> powerStorage_;
+	ContainerT<RT::Power> powerStorage_;
 };
 
 template<>
 class Structure<StructureType::Cryochamber> : public ConstructibleBase
 {
-	ResourceContainerT<ResourceType::Heat> heatStorage_;
-	ResourceContainerT<ResourceType::Power> powerStorage_;
+	ContainerT<RT::Heat> heatStorage_;
+	ContainerT<RT::Power> powerStorage_;
 };
 
 template<>

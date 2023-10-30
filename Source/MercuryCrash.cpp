@@ -12,17 +12,18 @@ import Resources;
 
 int main()
 {
-    //ResourceContainerD<ResourceType::Heat> container;
+    //ContainerD<ResourceType::Heat> container;
 
     ResoursePack<ResourceType::Heat, ResourceType::Conductor> test( 1.f, 2.f );
 
     ResourceInfo<ResourceType::Heat> testInfo{ 5.f };
+    //ResourceInfo<ResourceType::Heat> testInfo2 = ResourceInfo<ResourceType::Heat>::WithNegative(1.f);
     //std::vector<int> test
-    ResourceContainerD testContainer{ testInfo, 11.f };
+    //ContainerD testContainer{ testInfo, 11.f };
 
     //constexpr auto testRT = static_cast<ResourceType>(90);
 
     //ResourceInfo<testRT> testInfo2{ 5.f };
-    std::cout << test.GetResourceAmount<ResourceType::Conductor>() << std::endl;
+    std::cout << test.GetAmount<ResourceType::Conductor>() << std::endl;
     std::cout << "Hello World!\n";
 }

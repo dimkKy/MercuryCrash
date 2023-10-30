@@ -15,10 +15,10 @@ import <stdexcept>;
 export template<ResourceType Type>
 struct ResourceInfo {
 	const float amount_;
-	constexpr ResourceInfo(float amount = 0.f) :
+	
+	constexpr ResourceInfo(float amount = 0.f) noexcept:
 		amount_{ amount } 
 	{
-
 	};
 };
 
@@ -27,12 +27,12 @@ struct ResourceInfo {
 //TYPED NON ATOMIC +
 //!!!!!!
 
-export class ResourceContainer{
+export class Container{
 	std::atomic<float> amount_;
 
 protected:
 
-	constexpr ResourceContainer(float range, float amount = 0.f) noexcept(false) :
+	constexpr Container(float range, float amount = 0.f) noexcept(false) :
 		amount_{ amount }, range_{ range }
 	{
 		if (range < amount || range <= 0.f) {
@@ -41,10 +41,11 @@ protected:
 	};
 
 public:
+	using AmountType = decltype(amount_)::value_type;
 	const float range_;
 
-	ResourceContainer() = delete;
-	virtual ~ResourceContainer() = default;
+	Container() = delete;
+	virtual ~Container() = default;
 
 	virtual ResourceType GetType() const& = 0;
 
@@ -76,14 +77,15 @@ public:
 };
 
 export template<ResourceType Type>
-class ResourceContainerT : public ResourceContainer
+class ContainerT : public Container
 {
 public:
+	using Container::AmountType;
 
-	ResourceContainerT() = delete;
+	ContainerT() = delete;
 
-	constexpr ResourceContainerT(float range, float amount = 0.f) :
-		ResourceContainer(range, amount)
+	constexpr ContainerT(float range, float amount = 0.f) :
+		Container(range, amount)
 	{
 		//static_assert(range >= amount && range > 0.f);
 	};
@@ -94,23 +96,23 @@ public:
 	};
 };
 
-export class ResourceContainerD : public ResourceContainer
+export class ContainerD : public Container
 {
 	std::atomic<ResourceType> _type;	
 public:
-
-	ResourceContainerD() = delete;
+	using Container::AmountType;
+	ContainerD() = delete;
 
 	template<ResourceType Type>
-	ResourceContainerD(const ResourceContainerT<Type>& container) :
-		ResourceContainer(container._range, container.GetAmount()), _type{ Type }
+	ContainerD(const ContainerT<Type>& container) :
+		Container(container._range, container.GetAmount()), _type{ Type }
 	{
 
 	};
 
 	template<ResourceType Type>
-	ResourceContainerD(const ResourceInfo<Type>& info, float range) :
-		ResourceContainer(range, info.amount_), _type{ Type }
+	ContainerD(const ResourceInfo<Type>& info, float range) :
+		Container(range, info.amount_), _type{ Type }
 	{
 
 	};
@@ -138,7 +140,7 @@ public:
 	}
 
 	template<ResourceType Type>
-	constexpr float GetResourceAmount() const {
+	constexpr float GetAmount() const {
 		return std::get<ResourceInfo<Type>>(amounts_).amount_;
 	}
 };

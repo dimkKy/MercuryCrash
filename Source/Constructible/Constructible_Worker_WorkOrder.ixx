@@ -15,8 +15,8 @@ import <stdexcept>;
 
 //build order and return order
 template<ResourceType Type>
-using ContainerPtrT = std::weak_ptr<ResourceContainerT<Type>>;
-using ContainerPtrD = std::weak_ptr<ResourceContainer>;
+using ContainerPtrT = std::weak_ptr<ContainerT<Type>>;
+using ContainerPtrD = std::weak_ptr<Container>;
 
 export class WorkOrder {
 protected:
@@ -31,25 +31,6 @@ protected:
 	}
 
 public:
-	/*WorkOrder(ContainerPtrD&& source, ContainerPtrD&& target, float requestedAmount) noexcept(false) :
-		WorkOrder(std::move(source), std::move(target), std::move(ContainerPtrD{}), requestedAmount) {}
-
-	WorkOrder(ContainerPtrD&& source, ContainerPtrD&& target,
-		ContainerPtrD&& fallback, float requestedAmount) noexcept(false) :
-		source_{ source }, target_{ target }, fallback_{ fallback },
-		requestedAmount_{ requestedAmount }
-	{
-		if (requestedAmount_ <= 0.f) {
-			throw std::invalid_argument{ "requestedAmount must be positive" };
-		}
-		/*if (!source_.operator bool() || source_.expired() || !target_ || target_.expired()) {
-			throw std::invalid_argument{ "containers are not of the same type" };
-		}
-		if (source_->GetType() != target_->GetType() != fallback_->GetType()) {
-			throw std::invalid_argument{ "containers are not of the same type" };
-		}*
-	}*/
-
 	//returns amount acquired (positive)
 	virtual float RequestFromSource(float amount) & = 0;
 
@@ -58,13 +39,16 @@ public:
 };
 
 export class BuildOrder : WorkOrder {
-	const ContainerPtrT<ResourceType::Time> timer_;
-	const ContainerPtrT<ResourceType::Conductor> conductor_;
-	const ContainerPtrT<ResourceType::Composite> composite_;
-
+	const ContainerPtrT<RT::Time> timer_;
+	const ContainerPtrT<RT::Conductor> conductor_;
+	const ContainerPtrT<RT::Composite> composite_;
 
 	//TODO
 public:
+	BuildOrder() {
+
+	}
+
 	virtual float RequestFromSource(float amount) & override {
 
 	}
@@ -75,16 +59,50 @@ public:
 };
 
 export class TransferOrder : WorkOrder {
-	std::atomic<float> requestedAmount_;
+	std::atomic<float> requested_;
 
 	const ContainerPtrD source_;
 	const ContainerPtrD target_;
 	const ContainerPtrD fallback_;
 
 public:
+	TransferOrder(ContainerPtrD&& source, ContainerPtrD&& target,
+		ContainerPtrD&& fallback, float requested) noexcept(false) :
+		source_{ source }, target_{ target }, fallback_{ fallback },
+		requested_{ requested } 
+	{
+		if (requested_ <= 0.f) {
+			throw std::invalid_argument{ "requestedAmount must be positive" };
+		}
+		
+		if (auto&& src{ source_.lock() }) {
+			ResourceType type{ src->GetType() };
+
+			if (auto&& trgt{ target_.lock() }) {
+				if (type != trgt->GetType()) {
+					throw std::invalid_argument
+						{ "target: containers are not of the same type" };
+				}
+			}
+			else {
+				throw std::invalid_argument{ "target is already expired" };
+			}
+
+			if (auto&& flbck{ fallback_.lock() }) {
+				if (type != flbck->GetType()) {
+					throw std::invalid_argument
+						{ "fallback: containers are not of the same type" };
+				}
+			}
+		}
+		else {
+			throw std::invalid_argument{ "source is already expired" };
+		}
+
+	}
 
 	float GetAmount() const& {
-		return requestedAmount_.load(std::memory_order_relaxed);
+		return requested_.load(std::memory_order_relaxed);
 	}
 
 	virtual float RequestFromSource(float amount) & override {
@@ -95,15 +113,15 @@ public:
 			float workLeft{ GetAmount() };
 			float amountLeft{ min(amount, workLeft) };
 
-			while (!requestedAmount_.compare_exchange_weak(
+			while (!requested_.compare_exchange_weak(
 				workLeft, workLeft - amountLeft)) {
 				amountLeft = min(amount, workLeft);
 			}
 
-			float amountGot{ -1.f * source->ChangeAmount(-1.f * amountLeft) };
+			float acquired{ -1.f * source->ChangeAmount(-1.f * amountLeft) };
 
-			requestedAmount_.fetch_add(amountLeft - amountGot, memory_order_acq_rel);
-			return amountGot;
+			requested_.fetch_add(amountLeft - acquired, memory_order_acq_rel);
+			return acquired;
 		}
 		else {
 			return 0.f;
@@ -112,11 +130,11 @@ public:
 
 	virtual float UnloadToTarget(float amount, bool bAllowReturn) & override {
 		assert(amount >= 0.f);
-		float unloadedAmount{ AddTo(target_, amount) };
+		float unloaded{ AddTo(target_, amount) };
 		if (bAllowReturn) {
-			unloadedAmount += AddTo(source_, amount - unloadedAmount);
-			unloadedAmount += AddTo(fallback_, amount - unloadedAmount);
+			unloaded += AddTo(source_, amount - unloaded);
+			unloaded += AddTo(fallback_, amount - unloaded);
 		}
-		return unloadedAmount;
+		return unloaded;
 	}
 };

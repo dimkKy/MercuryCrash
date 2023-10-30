@@ -29,9 +29,9 @@ export class Worker : public ConstructibleBase
 	std::weak_ptr<WorkOrder> order_;
 	std::weak_ptr<WorkOrder> nextOrder_;
 
-	ResourceContainerD storage_;
+	ContainerD storage_;
 
-	ResourceContainerT<ResourceType::Time> timer_;
+	ContainerT<ResourceType::Time> timer_;
 
 	constexpr static float workRate{ 1.f };
 
