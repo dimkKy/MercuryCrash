@@ -2,7 +2,10 @@
 
 #include <vector>
 import <iostream>;
+
 import Resources;
+//import Game;
+
 
 //#define COMMANDS_COUNT_INIT 0
 
@@ -25,5 +28,8 @@ int main()
 
     //ResourceInfo<testRT> testInfo2{ 5.f };
     std::cout << test.GetAmount<ResourceType::Conductor>() << std::endl;
+
+    //Ship ship;
+
     std::cout << "Hello World!\n";
 }

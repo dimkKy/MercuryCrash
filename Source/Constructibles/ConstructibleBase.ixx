@@ -1,8 +1,10 @@
 // by Dmitry Kolontay
 
-export module Constructible.ConstructibleBase;
+export module ConstructibleBase;
 
 import Resources;
+import Utils;
+
 import <tuple>;
 
 class ConstructionInfoProvider {
@@ -21,7 +23,8 @@ public:
 	}*/
 };
 
-export using BuildingResPack = ResoursePack<RT::Composite, RT::Conductor, RT::Time>;
+export using BuildingResPack = 
+	ResoursePack<RT::Composite, RT::Conductor, RT::Time>;
 
 export using BasicResPack = ResoursePack<RT::Composite, RT::Conductor>;
 
@@ -40,6 +43,12 @@ export struct ConstructionInfo {
 	}*/
 };
 
+enum class ConstructionStatus {
+	Building,
+	Constructed,
+	Demolition,
+};
+
 export class ConstructibleBase
 {
 	//how to init?
@@ -48,29 +57,47 @@ export class ConstructibleBase
 	ContainerT<RT::Conductor> conductor_;
 	ContainerT<RT::Time> timer_;
 
+	ConstructionStatus status_;
 	//resource to build -> time to build -> resources after disassemble
 	//
 
 	//container to 
 
 protected:
-	ConstructibleBase(const ConstructionInfo& info) :
+	constexpr ConstructibleBase(const ConstructionInfo& info) :
 		constructionInfo_{ info }, 
 		composite_{ info.GetAmount<RT::Composite>()},
 		conductor_{ info.GetAmount<RT::Conductor>()},
-		timer_{ info.GetAmount<RT::Time>()}
+		timer_{ info.GetAmount<RT::Time>()},
+		status_{ ConstructionStatus::Building }
 	{
 			
 	}
 
-	ConstructibleBase(const ConstructionInfo& info, const BasicResPack& pack) :
+	constexpr ConstructibleBase(const ConstructionInfo& info, const BasicResPack& pack) :
 		constructionInfo_{ info },
 		composite_{ info.GetAmount<RT::Composite>(), pack.GetAmount<RT::Composite>() },
 		conductor_{ info.GetAmount<RT::Conductor>(), pack.GetAmount<RT::Conductor>() },
-		timer_{ info.GetAmount<RT::Time>() }
+		timer_{ info.GetAmount<RT::Time>() }, status_{ ConstructionStatus::Building }
 	{
 
 	}
 public:
+
+	Container* VerifyForConstruction(){
+		if (status_ != ConstructionStatus::Building) {
+			return nullptr;
+		}
+
+		if(Utils::NotNegligibleAmount(composite_.GetFreeSpace()) ||
+			Utils::NotNegligibleAmount(conductor_.GetFreeSpace())) {
+			//status?
+			return nullptr;
+		}
+		else {
+			return &timer_;
+		}
+	}
+
 	virtual ~ConstructibleBase() = default;
 };

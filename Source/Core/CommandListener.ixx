@@ -1,6 +1,6 @@
 // by Dmitry Kolontay
 
-export module Core.CommandListener;
+export module CommandListener;
 
 import <iostream>;
 import <regex>;
@@ -37,12 +37,12 @@ namespace Commands {
 	}
 };
 
-
 namespace InputMsgs {
 
 };
 
 using ProcessFunctionPtr = void(*)(const std::vector<std::string>&);
+using ArgIter = std::vector<std::string>::const_iterator;
 
 export class CommandListener {
 	std::string buffer_;
@@ -51,43 +51,43 @@ export class CommandListener {
 	const std::regex delim_{ "\\s+" };
 	const std::sregex_token_iterator end_;
 
-	const static std::unordered_map<std::string_view, ProcessFunctionPtr> commandsMap_;
+	const static std::unordered_map<
+		std::string_view, ProcessFunctionPtr> commandsMap_;
 
-	std::vector<int> static ParseForWorkers(
-		const std::vector<std::string>& args, int startingPos = 1) {
+	std::vector<int> static ParseForWorkers(ArgIter begin, ArgIter end) {
 		using namespace Commands;
 
 		std::vector<int> workerIDs;
-		workerIDs.reserve(args.size() - startingPos);
+		workerIDs.reserve(std::distance(begin, end));
 
-		for (size_t i{ 1 }; i < args.size(); ++i) {
-			if (IsWorkerID(args[i])) {
-				workerIDs.push_back(WorkerID(args[i]));
+		for (; begin != end; ++begin) {
+			if (IsWorkerID(*begin)) {
+				workerIDs.push_back(WorkerID(*begin));
 			}
 		}
 		return workerIDs;
 	}
 
-	std::vector<int> static ParseForOrders(
-		const std::vector<std::string>& args, int startingPos = 1) {
+	std::vector<int> static ParseForOrders(ArgIter begin, ArgIter end) {
 		using namespace Commands;
 
 		std::vector<int> orderIDs;
-		orderIDs.reserve(args.size() - startingPos);
+		orderIDs.reserve(std::distance(begin, end));
 
-		for (size_t i{ 1 }; i < args.size(); ++i) {
-			if (IsOrderID(args[i])) {
-				orderIDs.push_back(OrderID(args[i]));
+		for (; begin != end; ++begin) {
+			if (IsOrderID(*begin)) {
+				orderIDs.push_back(OrderID(*begin));
 			}
 		}
+
 		return orderIDs;
 	}
 
 	static void buildCommand(const std::vector<std::string>& args) {
 		//offset for build info?
-		std::vector<int> workerIDs{ ParseForWorkers(args, 2) };
+		std::vector<int> workerIDs{ ParseForWorkers(args.begin() + 2, args.end())};
 
-
+		
 	}
 
 	static void fixCommand(const std::vector<std::string>& args) {
@@ -103,7 +103,7 @@ export class CommandListener {
 	}
 
 	static void mineCommand(const std::vector<std::string>& args) {
-		std::vector<int> workerIDs{ ParseForWorkers(args) };
+		std::vector<int> workerIDs{ ParseForWorkers(args.begin(), args.end()) };
 		//do smthing with ids
 	}
 
@@ -112,8 +112,8 @@ export class CommandListener {
 	}
 
 	static void abortCommand(const std::vector<std::string>& args) {
-		std::vector<int> workerIDs{ ParseForWorkers(args) };
-		std::vector<int> orderIDs{ ParseForOrders(args) };
+		std::vector<int> workerIDs{ ParseForWorkers(args.begin(), args.end()) };
+		std::vector<int> orderIDs{ ParseForOrders(args.begin(), args.end()) };
 		//for each delete
 	}
 

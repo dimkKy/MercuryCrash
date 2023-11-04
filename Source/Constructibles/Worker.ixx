@@ -1,8 +1,8 @@
 ﻿// by Dmitry Kolontay
-
-export module Constructible.Worker;
-export import Constructible.Worker.WorkOrder;
-export import Constructible.ConstructibleBase;
+//check exports
+export module Worker;
+export import WorkOrder;
+export import ConstructibleBase;
 
 import Resources;
 import Utils;
@@ -117,15 +117,6 @@ float Worker::LoadFrom(float deltatime)
 {
 	assert(deltatime >= 0.f && status_ == WorkerStatus::Loading);
 
-	/*if (auto order{ order_.lock() }) {
-		float workDone{ order->RequestFromSource(
-			std::min(storage_.GetFreeSpace(), deltatime * workRate)) };
-		storage_.ChangeAmount(workDone);
-		return deltatime - workDone / workRate;
-	}
-	else {
-		return deltatime;
-	}*/
 	float workDone{ 0.f };
 	if (auto order{ order_.lock() }) {
 		workDone = order->RequestFromSource(
@@ -144,7 +135,7 @@ float Worker::AddTo(float deltatime)
 
 	/*if (auto order{ order_.lock() }) {
 		float workDone{ order->UnloadToTarget(
-			std::min(storage_.GetAmount(), deltatime * workRate), true) };
+			std::min(storage_.GetAmount(), deltatime * workRate)) };
 		storage_.ChangeAmount(-1.f * workDone);
 		return deltatime - workDone / workRate;
 	}
@@ -155,7 +146,7 @@ float Worker::AddTo(float deltatime)
 	float workDone{ 0.f };
 	if (auto order{ order_.lock() }) {
 		workDone = order->UnloadToTarget(
-			std::min(storage_.GetAmount(), deltatime * workRate), true);
+			std::min(storage_.GetAmount(), deltatime * workRate));
 	}
 	else {
 		return deltatime;

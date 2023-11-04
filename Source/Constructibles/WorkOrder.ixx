@@ -1,6 +1,8 @@
-export module Constructible.Worker.WorkOrder;
+export module WorkOrder;
 
 import Resources;
+import Utils;
+import ConstructibleBase;
 
 import <memory>;
 import <cassert>;
@@ -18,11 +20,20 @@ template<ResourceType Type>
 using ContainerPtrT = std::weak_ptr<ContainerT<Type>>;
 using ContainerPtrD = std::weak_ptr<Container>;
 
+//WAY TO CANCEL DEAD ORDER
 export class WorkOrder {
 protected:
-	float AddTo(const ContainerPtrD& to, float amount)& {
+
+	//throw?
+	float AddTo(Container& to, float amount) const {
 		assert(amount >= 0.f);
-		if (auto target{ to.lock() }) {
+		return to.ChangeAmount(amount);
+	}
+
+	template<Utils::ChildOf<Container, true> Cont>
+	float AddTo(const std::weak_ptr<Cont>& to, float amount) const {
+		assert(amount >= 0.f);
+		if (auto&& target{ to.lock() }) {
 			return target->ChangeAmount(amount);
 		}
 		else {
@@ -34,27 +45,37 @@ public:
 	//returns amount acquired (positive)
 	virtual float RequestFromSource(float amount) & = 0;
 
-	virtual float UnloadToTarget(float amount, bool bAllowReturn) & = 0;
+	virtual float UnloadToTarget(float amount) const & = 0;
 	virtual ~WorkOrder() = default;
 };
 
 export class BuildOrder : WorkOrder {
-	const ContainerPtrT<RT::Time> timer_;
-	const ContainerPtrT<RT::Conductor> conductor_;
-	const ContainerPtrT<RT::Composite> composite_;
 
-	//TODO
+	const std::weak_ptr<ConstructibleBase> structure_;
+
+	float Process(float amount) const {
+		assert(amount >= 0.f);
+		if (auto&& structure{ structure_.lock() }) {
+			if (auto&& timer{ structure->VerifyForConstruction() }) {
+				return AddTo(*timer, amount);
+			}
+		}
+		return 0.f;
+	}
+
 public:
-	BuildOrder() {
+	BuildOrder(std::weak_ptr<ConstructibleBase>&& structure) :
+		structure_{ structure }
+	{
 
 	}
 
 	virtual float RequestFromSource(float amount) & override {
-
+		return Process(amount);
 	}
 
-	virtual float UnloadToTarget(float amount, bool bAllowReturn) & override {
-
+	virtual float UnloadToTarget(float amount) const & override {
+		return Process(amount);
 	}
 };
 
@@ -101,6 +122,10 @@ public:
 
 	}
 
+	TransferOrder(ContainerPtrD&& source, ContainerPtrD&& target, float requested) 
+		noexcept(noexcept(TransferOrder({}, {}, {}, 0.f))) :
+		TransferOrder(std::move(source), std::move(target), {}, requested) {};
+
 	float GetAmount() const& {
 		return requested_.load(std::memory_order_relaxed);
 	}
@@ -128,13 +153,11 @@ public:
 		}
 	}
 
-	virtual float UnloadToTarget(float amount, bool bAllowReturn) & override {
+	virtual float UnloadToTarget(float amount) const & override {
 		assert(amount >= 0.f);
 		float unloaded{ AddTo(target_, amount) };
-		if (bAllowReturn) {
-			unloaded += AddTo(source_, amount - unloaded);
-			unloaded += AddTo(fallback_, amount - unloaded);
-		}
+		unloaded += AddTo(source_, amount - unloaded);
+		unloaded += AddTo(fallback_, amount - unloaded);
 		return unloaded;
 	}
 };

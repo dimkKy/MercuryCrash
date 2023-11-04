@@ -1,4 +1,4 @@
 ## MercuryCrash
 
 ### Compatibility
-* c++20
+* C++20

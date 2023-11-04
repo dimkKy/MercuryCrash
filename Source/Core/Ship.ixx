@@ -1,8 +1,9 @@
 // by Dmitry Kolontay
 
-export module Game;
+export module Ship;
 
-import Constructible;
+import Structures;
+import Worker;
 import Resources;
 
 import <list>;
@@ -26,20 +27,26 @@ export struct ShipInitState {
 };
 
 export class Ship {
-	Structure<StructureType::Hull> hull_;
-	Structure<StructureType::Reactor> reactor_;
+	Structure<ST::Hull> hull_;
+	Structure<ST::Reactor> reactor_;
 
 	ContainerT<RT::Composite> composite_;
 	ContainerT<RT::Conductor> conductors_;
 
-	std::list<Structure<StructureType::SolarPanel>> solarPanels_;
-	std::list<Structure<StructureType::Cryochamber>> cryochambers_;
-	std::list<Structure<StructureType::Battery>> batteries_;
+	std::list<Structure<ST::SolarPanel>> solarPanels_;
+	std::list<Structure<ST::Cryochamber>> cryochambers_;
+	std::list<Structure<ST::Battery>> batteries_;
 
 	std::list<Worker> workers_;
 	std::list<WorkOrder> orders_;
 
-	ContainerT<ResourceType::Composite> mine_;
+	ContainerT<RT::Composite> mine_;
+
+	template<StructureType Type>
+	void AddStructure()& {
+
+	}
+
 public:
 	/*Ship(const ShipInitState& state) :
 		hull_{ state.hullHealth_ }, reactor_{ state.reactorHealth_ },
@@ -64,6 +71,18 @@ public:
 			batteries_.emplace_back();
 		}
 	}*/
+
+	void AddSolarPanel() & {
+
+	}
+
+	void AddBattery() & {
+
+	}
+
+	void AddWorker() & {
+
+	}
 };
 
 export class TickOperator {
