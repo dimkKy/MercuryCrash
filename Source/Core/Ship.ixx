@@ -5,26 +5,14 @@ export module Ship;
 import Structures;
 import Worker;
 import Resources;
+import BalanceSettings;
 
 import <list>;
 import <string>;
 import <vector>;
+import <memory>;
 
-//do I need ResourceInfo here
-
-export struct ShipInitState {
-	BasicResPack hullHealth_;
-	BasicResPack reactorHealth_;
-	BasicResPack storage_;
-
-	int solarPanels_;
-	int cryochambers_;
-	int batteries_;
-
-	int workers_;
-
-	float mineAmount_;	
-};
+constexpr auto maxfloat = std::numeric_limits<float>::max;
 
 export class Ship {
 	Structure<ST::Hull> hull_;
@@ -33,26 +21,25 @@ export class Ship {
 	ContainerT<RT::Composite> composite_;
 	ContainerT<RT::Conductor> conductors_;
 
-	std::list<Structure<ST::SolarPanel>> solarPanels_;
-	std::list<Structure<ST::Cryochamber>> cryochambers_;
-	std::list<Structure<ST::Battery>> batteries_;
+	template<typename T>
+	using ListType = std::list<std::shared_ptr<T>>;
 
-	std::list<Worker> workers_;
-	std::list<WorkOrder> orders_;
+	ListType<Structure<ST::SolarPanel>> solarPanels_;
+	ListType<Structure<ST::Cryochamber>> cryochambers_;
+	ListType<Structure<ST::Battery>> batteries_;
+
+	ListType<Worker> workers_;
+	ListType<WorkOrder> orders_;
 
 	ContainerT<RT::Composite> mine_;
 
-	template<StructureType Type>
-	void AddStructure()& {
-
-	}
-
 public:
-	/*Ship(const ShipInitState& state) :
-		hull_{ state.hullHealth_ }, reactor_{ state.reactorHealth_ },
-		composite_{ , state.storage_.GetAmount<RT::Composite>() },
-		conductors_{ , state.storage_.GetAmount<RT::Conductor>() },
-		mine_{ std::numeric_limits<decltype(mine_)::AmountType>::max(), state.mineAmount_ }
+	Ship(const BalanceSettings& state) :
+		hull_{ state.hullInfo_, state.hullHealthInit_ }, 
+		reactor_{ state.reactorInfo_, state.reactorHealthInit_ },
+		composite_{ maxfloat(), state.storage_.GetRes<RT::Composite>() },
+		conductors_{ maxfloat(), state.storage_.GetRes<RT::Conductor>() },
+		mine_{ maxfloat(), state.mineAmount_ }
 	{
 		for (int i{ 0 }; i < state.workers_; ++i) {
 			//add worker
@@ -70,17 +57,17 @@ public:
 		for (int i{ 0 }; i < state.batteries_; ++i) {
 			batteries_.emplace_back();
 		}
-	}*/
+	}
 
-	void AddSolarPanel() & {
+	std::weak_ptr<ConstructibleBase> AddSolarPanel() & {
 
 	}
 
-	void AddBattery() & {
+	std::weak_ptr<ConstructibleBase> AddBattery() & {
 
 	}
 
-	void AddWorker() & {
+	std::weak_ptr<ConstructibleBase> AddWorker() & {
 
 	}
 };

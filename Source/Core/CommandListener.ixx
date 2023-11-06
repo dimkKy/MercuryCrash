@@ -51,7 +51,7 @@ export class CommandListener {
 	const std::regex delim_{ "\\s+" };
 	const std::sregex_token_iterator end_;
 
-	const static std::unordered_map<
+	static std::unordered_map<
 		std::string_view, ProcessFunctionPtr> commandsMap_;
 
 	std::vector<int> static ParseForWorkers(ArgIter begin, ArgIter end) {
@@ -87,7 +87,6 @@ export class CommandListener {
 		//offset for build info?
 		std::vector<int> workerIDs{ ParseForWorkers(args.begin() + 2, args.end())};
 
-		
 	}
 
 	static void fixCommand(const std::vector<std::string>& args) {
@@ -122,6 +121,7 @@ export class CommandListener {
 	}
 
 public:
+	CommandListener() {}
 
 	void Run(std::istream& iStream = std::cin) {
 		while (true) {
@@ -145,7 +145,7 @@ public:
 
 #define PAIR_PROCESS_FUNCTION(_name_) {Commands::_name_, &CommandListener::_name_##Command}
 
-const std::unordered_map<std::string_view, ProcessFunctionPtr> CommandListener::commandsMap_{
+std::unordered_map<std::string_view, ProcessFunctionPtr> CommandListener::commandsMap_{
 	PAIR_PROCESS_FUNCTION(build),
 	PAIR_PROCESS_FUNCTION(fix),
 	PAIR_PROCESS_FUNCTION(mine),

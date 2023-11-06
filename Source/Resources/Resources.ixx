@@ -49,17 +49,17 @@ public:
 
 	virtual ResourceType GetType() const& = 0;
 
-	float GetAmount() const& {
+	float GetRes() const& {
 		return amount_.load(std::memory_order_relaxed);
 	};
 
 	float GetFreeSpace() const& {
-		return range_ - GetAmount();
+		return range_ - GetRes();
 	};
 
 	//returns newVal - oldVal
 	float ChangeAmount(float amount)& {
-		float oldVal{ GetAmount() };
+		float oldVal{ GetRes() };
 		float newVal{ std::clamp(oldVal + amount, 0.f, range_) };
 
 		while (!amount_.compare_exchange_weak(oldVal, newVal, std::memory_order_acq_rel))
@@ -105,7 +105,7 @@ public:
 
 	template<ResourceType Type>
 	ContainerD(const ContainerT<Type>& container) :
-		Container(container._range, container.GetAmount()), _type{ Type }
+		Container(container._range, container.GetRes()), _type{ Type }
 	{
 
 	};
@@ -125,22 +125,26 @@ public:
 
 export template<ResourceType... Types> requires Utils::NonEmpty<ResourceType>
 class ResoursePack {
-	//using ResourcePackType = decltype(std::tuple(ResourceInfo{ Types, 0.f } ...));
-	using ResourcePackType = decltype(std::tuple<decltype(ResourceInfo<Types>{}) ...>());
+	using ResourcePackType = std::tuple<decltype(ResourceInfo<Types>{}) ...>;
 
 public:
 	const ResourcePackType amounts_;
 	
 	ResoursePack() = delete;
 
-	template<class... Values> requires Utils::SameInts<sizeof...(Values), sizeof...(Types)>
-	//explicit ResoursePack(Values... amounts) : amounts_ { {Types, amounts}...} {
-	constexpr explicit ResoursePack(Values... amounts) : 
+	template<class... Values> 
+		requires Utils::SameInts<sizeof...(Values), sizeof...(Types)>
+	constexpr explicit ResoursePack(Values... amounts) noexcept: 
 		amounts_ { (ResourceInfo<Types>{amounts})...} {
 	}
 
 	template<ResourceType Type>
-	constexpr float GetAmount() const {
+	constexpr float GetRes() const {
 		return std::get<ResourceInfo<Type>>(amounts_).amount_;
 	}
 };
+
+export using BuildingResPack =
+	ResoursePack<RT::Composite, RT::Conductor, RT::Time>;
+
+export using BasicResPack = ResoursePack<RT::Composite, RT::Conductor>;

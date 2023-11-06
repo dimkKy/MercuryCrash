@@ -7,7 +7,7 @@ import Utils;
 
 import <tuple>;
 
-class ConstructionInfoProvider {
+/*class ConstructionInfoProvider {
 	ConstructionInfoProvider();
 	~ConstructionInfoProvider() = default;
 
@@ -20,28 +20,34 @@ public:
 	/*template<class T>
 	const ConstructionInfo& GetInfo() const {
 
-	}*/
+	}*
 };
-
-export using BuildingResPack = 
-	ResoursePack<RT::Composite, RT::Conductor, RT::Time>;
-
-export using BasicResPack = ResoursePack<RT::Composite, RT::Conductor>;
 
 export struct ConstructionInfo {	
 	const BuildingResPack resourceToBuild_;
-	const float reimburseCoef;
+	//redo
+	static constexpr BasicResPack reimburseCoef_{ 0.25f, 0.5f };
+
+	template<typename... Args>
+	constexpr ConstructionInfo(Args&&... args) :
+		resourceToBuild_{ std::forward<Args>(args)... } {}
+
+	/*constexpr ConstructionInfo(float com, float con, float t, float reimburseCoef = 0.5f) :
+		resourceToBuild_{ com,  con, t },
+		reimburseCoef_{ /*reimburseCoef*0.5f } {}*
 
 	template<ResourceType Type>
-	float GetAmount() const {
-		return resourceToBuild_.GetAmount<Type>();
+	[[nodiscard]] float GetRes() const & noexcept {
+		return resourceToBuild_.GetRes<Type>();
 	}
 
+
+
 	/*template<ResourceType Type>
-	float GetAmount() const {
-		return resourceToBuild_.GetAmount<Type>();
-	}*/
-};
+	float GetRes() const {
+		return resourceToBuild_.GetRes<Type>();
+	}*
+};*/
 
 enum class ConstructionStatus {
 	Building,
@@ -52,7 +58,7 @@ enum class ConstructionStatus {
 export class ConstructibleBase
 {
 	//how to init?
-	const ConstructionInfo& constructionInfo_;
+	//const ConstructionInfo& constructionInfo_;
 	ContainerT<RT::Composite> composite_;
 	ContainerT<RT::Conductor> conductor_;
 	ContainerT<RT::Time> timer_;
@@ -64,21 +70,21 @@ export class ConstructibleBase
 	//container to 
 
 protected:
-	constexpr ConstructibleBase(const ConstructionInfo& info) :
-		constructionInfo_{ info }, 
-		composite_{ info.GetAmount<RT::Composite>()},
-		conductor_{ info.GetAmount<RT::Conductor>()},
-		timer_{ info.GetAmount<RT::Time>()},
+	constexpr ConstructibleBase(const BuildingResPack& max) :
+		//constructionInfo_{ max }, 
+		composite_{ max.GetRes<RT::Composite>()},
+		conductor_{ max.GetRes<RT::Conductor>()},
+		timer_{ max.GetRes<RT::Time>()},
 		status_{ ConstructionStatus::Building }
 	{
 			
 	}
 
-	constexpr ConstructibleBase(const ConstructionInfo& info, const BasicResPack& pack) :
-		constructionInfo_{ info },
-		composite_{ info.GetAmount<RT::Composite>(), pack.GetAmount<RT::Composite>() },
-		conductor_{ info.GetAmount<RT::Conductor>(), pack.GetAmount<RT::Conductor>() },
-		timer_{ info.GetAmount<RT::Time>() }, status_{ ConstructionStatus::Building }
+	constexpr ConstructibleBase(const BuildingResPack& max, const BasicResPack& current) :
+		//constructionInfo_{ max },
+		composite_{ max.GetRes<RT::Composite>(), current.GetRes<RT::Composite>() },
+		conductor_{ max.GetRes<RT::Conductor>(), current.GetRes<RT::Conductor>() },
+		timer_{ max.GetRes<RT::Time>() }, status_{ ConstructionStatus::Building }
 	{
 
 	}

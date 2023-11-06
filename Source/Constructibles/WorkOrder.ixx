@@ -126,7 +126,7 @@ public:
 		noexcept(noexcept(TransferOrder({}, {}, {}, 0.f))) :
 		TransferOrder(std::move(source), std::move(target), {}, requested) {};
 
-	float GetAmount() const& {
+	float GetRes() const& {
 		return requested_.load(std::memory_order_relaxed);
 	}
 
@@ -135,7 +135,7 @@ public:
 		assert(amount >= 0.f);
 		if (auto source{ source_.lock() }) {
 
-			float workLeft{ GetAmount() };
+			float workLeft{ GetRes() };
 			float amountLeft{ min(amount, workLeft) };
 
 			while (!requested_.compare_exchange_weak(

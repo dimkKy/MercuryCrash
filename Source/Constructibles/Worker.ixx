@@ -99,9 +99,7 @@ void Worker::StartChangeover()
 
 void Worker::StartChangeover(float initTime)
 {
-	status_ = WorkerStatus::Changeover;
-	//redo
-	timer_.Reset();
+	StartChangeover();
 	OnChangeover(initTime);
 }
 
@@ -133,20 +131,10 @@ float Worker::AddTo(float deltatime)
 {
 	assert(deltatime >= 0.f && status_ == WorkerStatus::Unloading);
 
-	/*if (auto order{ order_.lock() }) {
-		float workDone{ order->UnloadToTarget(
-			std::min(storage_.GetAmount(), deltatime * workRate)) };
-		storage_.ChangeAmount(-1.f * workDone);
-		return deltatime - workDone / workRate;
-	}
-	else {
-		return deltatime;
-	}
-	*/
 	float workDone{ 0.f };
 	if (auto order{ order_.lock() }) {
 		workDone = order->UnloadToTarget(
-			std::min(storage_.GetAmount(), deltatime * workRate));
+			std::min(storage_.GetRes(), deltatime * workRate));
 	}
 	else {
 		return deltatime;

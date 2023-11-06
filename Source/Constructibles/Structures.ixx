@@ -3,6 +3,8 @@
 export module Structures;
 import ConstructibleBase;
 
+import <tuple>;
+
 export enum class StructureType {
 	Battery,
 	SolarPanel, //t
@@ -41,14 +43,22 @@ class Structure<ST::Cryochamber> : public ConstructibleBase
 template<>
 class Structure<ST::Reactor> : public ConstructibleBase
 {
-
+public:
+	//Structure<ST::Reactor>(const BasicResPack& current) :
+		//ConstructibleBase(info, current) {}
+	template<typename... Args>
+	constexpr Structure<ST::Reactor>(Args&&... args) :
+		ConstructibleBase{ std::forward<Args>(args)... } {}
 };
 
 template<>
 class Structure<ST::Hull> : public ConstructibleBase
 {
 
-	//Structure<StructureType::Hull> hull_;
-
-
+public:
+	//Structure<ST::Hull>(const BasicResPack& current) :
+		//ConstructibleBase(info, current) {}
+	template<typename... Args>
+	constexpr Structure<ST::Hull>(Args&&... args) :
+		ConstructibleBase{ std::forward<Args>(args)... } {}
 };
