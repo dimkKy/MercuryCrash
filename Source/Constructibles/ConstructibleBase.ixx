@@ -55,6 +55,15 @@ enum class ConstructionStatus {
 	Demolition,
 };
 
+export namespace CS {
+	inline constexpr ConstructionStatus Building
+		{ ConstructionStatus::Building };
+	inline constexpr ConstructionStatus Constructed
+		{ ConstructionStatus::Constructed };
+	inline constexpr ConstructionStatus Demolition
+		{ ConstructionStatus::Demolition };
+}
+
 export class ConstructibleBase
 {
 	//how to init?
@@ -70,28 +79,44 @@ export class ConstructibleBase
 	//container to 
 
 protected:
-	constexpr ConstructibleBase(const BuildingResPack& max) :
+	constexpr ConstructibleBase(const BuildingResPack& max, ConstructionStatus status) :
 		//constructionInfo_{ max }, 
 		composite_{ max.GetRes<RT::Composite>()},
 		conductor_{ max.GetRes<RT::Conductor>()},
 		timer_{ max.GetRes<RT::Time>()},
-		status_{ ConstructionStatus::Building }
+		status_{ status }
 	{
-			
+		if (status_ == CS::Constructed) {
+
+		}
 	}
 
 	constexpr ConstructibleBase(const BuildingResPack& max, const BasicResPack& current) :
 		//constructionInfo_{ max },
 		composite_{ max.GetRes<RT::Composite>(), current.GetRes<RT::Composite>() },
 		conductor_{ max.GetRes<RT::Conductor>(), current.GetRes<RT::Conductor>() },
-		timer_{ max.GetRes<RT::Time>() }, status_{ ConstructionStatus::Building }
+		timer_{ max.GetRes<RT::Time>() }, status_{ CS::Building }
 	{
 
 	}
+
+	bool FinishBuilding()& {
+		switch (status_) {
+		case CS::Constructed:
+			return true;
+		case CS::Demolition:
+			return false;
+		case CS::Building:
+			[[fallthrough]];
+		default:
+			break;
+		}
+		//check?
+	}
 public:
 
-	Container* VerifyForConstruction(){
-		if (status_ != ConstructionStatus::Building) {
+	Container* CheckIfBuilding() & {
+		if (status_ != CS::Building) {
 			return nullptr;
 		}
 

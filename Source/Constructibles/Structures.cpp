@@ -1,77 +1,25 @@
-﻿// by Dmitry Kolontay
-//check exports
-export module Worker;
-export import WorkOrder;
-export import ConstructibleBase;
+// by Dmitry Kolontay
 
-import Resources;
-import Utils;
+module Structures;
 
-import <memory>;
-//import <cmath>;
+import WorkOrder;
 import <cassert>;
-import <algorithm>;
-import <atomic>;
-import <stdexcept>;
 
-enum class WorkerStatus
-{
-	Waiting,
-	Changeover,
-	Loading,
-	Unloading,
-	Malfunction,
-};
-
-//what should be atomic?
-export class Worker : public ConstructibleBase
-{
-	std::weak_ptr<WorkOrder> order_;
-	std::weak_ptr<WorkOrder> nextOrder_;
-
-	ContainerD storage_;
-
-	ContainerT<ResourceType::Time> timer_;
-
-	constexpr static float workRate{ 1.f };
-
-	WorkerStatus status_;
-	//self container
-	//on job finished
-	void OnWorkCompletion();
-
-	//returns time left
-	float OnChangeover(float deltatime);
-	//returns time left
-	float LoadFrom(float deltatime);
-	//returns time left
-	float AddTo(float deltatime);
-
-	void StartChangeover();
-	void StartChangeover(float initTime);
-
-public:
-	bool AssignWorkOrder(const std::shared_ptr<WorkOrder>& order)&;
-	void FinishWorking()&;
-
-	void Tick(float deltatime)&;
-};
-
-void Worker::Tick(float deltatime)&
+void Worker::Tick(float deltatime) &
 {
 	assert(deltatime > 0.f);
 	//decrease power
 	switch (status_) {
 	case WorkerStatus::Changeover:
-		{
-			float timeLeft{ deltatime - timer_.ChangeAmount(deltatime) };
-			//CHANGE STATUS
-			if (Utils::NotNegligibleTime(timeLeft)) {
+	{
+		float timeLeft{ deltatime - timer_.ChangeAmount(deltatime) };
+		//CHANGE STATUS
+		if (Utils::NotNegligibleTime(timeLeft)) {
 
-				Tick(timeLeft);
-			}
+			Tick(timeLeft);
 		}
-		break;
+	}
+	break;
 	case WorkerStatus::Loading:
 		LoadFrom(deltatime);
 		break;
@@ -82,7 +30,7 @@ void Worker::Tick(float deltatime)&
 		//untick?
 		break;
 	}
-	
+
 }
 
 void Worker::OnWorkCompletion()
@@ -172,5 +120,5 @@ void Worker::FinishWorking()&
 	order_.reset();
 	//try return resources?
 	status_ = WorkerStatus::Waiting;
-	
+
 }

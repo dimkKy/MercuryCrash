@@ -3,9 +3,9 @@
 export module Ship;
 
 import Structures;
-import Worker;
 import Resources;
 import BalanceSettings;
+import WorkOrder;
 
 import <list>;
 import <string>;
@@ -15,8 +15,8 @@ import <memory>;
 constexpr auto maxfloat = std::numeric_limits<float>::max;
 
 export class Ship {
-	Structure<ST::Hull> hull_;
-	Structure<ST::Reactor> reactor_;
+	Hull hull_;
+	Reactor reactor_;
 
 	ContainerT<RT::Composite> composite_;
 	ContainerT<RT::Conductor> conductors_;
@@ -24,9 +24,9 @@ export class Ship {
 	template<typename T>
 	using ListType = std::list<std::shared_ptr<T>>;
 
-	ListType<Structure<ST::SolarPanel>> solarPanels_;
-	ListType<Structure<ST::Cryochamber>> cryochambers_;
-	ListType<Structure<ST::Battery>> batteries_;
+	ListType<SolarPanel> solarPanels_;
+	ListType<Cryochamber> cryochambers_;
+	ListType<Battery> batteries_;
 
 	ListType<Worker> workers_;
 	ListType<WorkOrder> orders_;
@@ -34,7 +34,7 @@ export class Ship {
 	ContainerT<RT::Composite> mine_;
 
 public:
-	Ship(const BalanceSettings& state) :
+	/*Ship(const BalanceSettings& state) :
 		hull_{ state.hullInfo_, state.hullHealthInit_ }, 
 		reactor_{ state.reactorInfo_, state.reactorHealthInit_ },
 		composite_{ maxfloat(), state.storage_.GetRes<RT::Composite>() },
@@ -57,7 +57,7 @@ public:
 		for (int i{ 0 }; i < state.batteries_; ++i) {
 			batteries_.emplace_back();
 		}
-	}
+	}*/
 
 	std::weak_ptr<ConstructibleBase> AddSolarPanel() & {
 

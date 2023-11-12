@@ -1,3 +1,5 @@
+// by Dmitry Kolontay
+
 export module WorkOrder;
 
 import Resources;
@@ -56,7 +58,7 @@ export class BuildOrder : WorkOrder {
 	float Process(float amount) const {
 		assert(amount >= 0.f);
 		if (auto&& structure{ structure_.lock() }) {
-			if (auto&& timer{ structure->VerifyForConstruction() }) {
+			if (auto&& timer{ structure->CheckIfBuilding() }) {
 				return AddTo(*timer, amount);
 			}
 		}

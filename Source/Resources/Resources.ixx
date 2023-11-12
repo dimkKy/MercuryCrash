@@ -14,7 +14,7 @@ import <stdexcept>;
 
 export template<ResourceType Type>
 struct ResourceInfo {
-	const float amount_;
+	float amount_;
 	
 	constexpr ResourceInfo(float amount = 0.f) noexcept:
 		amount_{ amount } 
@@ -128,7 +128,7 @@ class ResoursePack {
 	using ResourcePackType = std::tuple<decltype(ResourceInfo<Types>{}) ...>;
 
 public:
-	const ResourcePackType amounts_;
+	ResourcePackType amounts_;
 	
 	ResoursePack() = delete;
 
