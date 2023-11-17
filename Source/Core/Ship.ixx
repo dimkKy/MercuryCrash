@@ -15,7 +15,8 @@ import <memory>;
 constexpr auto maxfloat = std::numeric_limits<float>::max;
 
 export class Ship {
-	Hull hull_;
+	Hull hull_{ BalanceSettings::MaxBuildRes<ST::Hull>(), 
+		BalanceSettings::InitRes<ST::Hull>() };
 	Reactor reactor_;
 
 	ContainerT<RT::Composite> composite_;
@@ -34,11 +35,11 @@ export class Ship {
 	ContainerT<RT::Composite> mine_;
 
 public:
-	/*Ship(const BalanceSettings& state) :
-		hull_{ state.hullInfo_, state.hullHealthInit_ }, 
+	/*Ship() :
+		hull_{ BalanceSettings:: state.hullInfo_, state.hullHealthInit_ }, 
 		reactor_{ state.reactorInfo_, state.reactorHealthInit_ },
-		composite_{ maxfloat(), state.storage_.GetRes<RT::Composite>() },
-		conductors_{ maxfloat(), state.storage_.GetRes<RT::Conductor>() },
+		composite_{ maxfloat(), state.storageInitState_.GetRes<RT::Composite>() },
+		conductors_{ maxfloat(), state.storageInitState_.GetRes<RT::Conductor>() },
 		mine_{ maxfloat(), state.mineAmount_ }
 	{
 		for (int i{ 0 }; i < state.workers_; ++i) {

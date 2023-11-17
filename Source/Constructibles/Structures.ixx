@@ -1,34 +1,16 @@
 // by Dmitry Kolontay
 
 export module Structures;
+export import Structures.Types;
 
 import ConstructibleBase;
 
 import <tuple>;
 import <memory>;
 
-export enum class StructureType {
-	Battery,
-	SolarPanel, //t
-	Reactor, //t
-	Cryochamber, //t
-	Hull,
-	Worker,
-	ST_MAX,
-};
-
-export namespace ST {
-	inline constexpr StructureType Battery{ StructureType::Battery };
-	inline constexpr StructureType SolarPanel{ StructureType::SolarPanel };
-	inline constexpr StructureType Reactor{ StructureType::Reactor };
-	inline constexpr StructureType Cryochamber{ StructureType::Cryochamber };
-	inline constexpr StructureType Hull{ StructureType::Hull };
-	inline constexpr StructureType Worker{ StructureType::Worker };
-}
-
 export template <StructureType Type> class Structure
 {
-	//static_assert(sizeof(Type) < 0 && "specialization use is required");
+	static_assert(sizeof(this) < 0, "specialization use is required");
 	Structure() = default;
 };
 
@@ -128,7 +110,7 @@ class Structure<ST::Worker>: public ConstructibleBase
 	std::weak_ptr<WorkOrder> order_;
 	std::weak_ptr<WorkOrder> nextOrder_;
 
-	ContainerD storage_;
+	ContainerD storageInitState_;
 
 	ContainerT<ResourceType::Time> timer_;
 

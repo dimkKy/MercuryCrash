@@ -35,7 +35,7 @@ protected:
 	constexpr Container(float range, float amount = 0.f) noexcept(false) :
 		amount_{ amount }, range_{ range }
 	{
-		if (range < amount || range <= 0.f) {
+		if (range < amount || range <= 0.f) [[unlikely]] {
 			throw std::invalid_argument{"range must be positive and not less then amount"};
 		}
 	};
@@ -94,6 +94,16 @@ public:
 	{
 		return Type;
 	};
+
+	bool SetAmountForced(float amount)& {
+		if (amount >= -0.f && amount <= range_) [[likely]] {
+			amount_.store(amount);
+			return true;
+		}
+		else {
+			return false;
+		}
+	}
 };
 
 export class ContainerD : public Container
@@ -122,6 +132,8 @@ public:
 		return _type.load();
 	};
 };
+template<class T, class... Classes>
+concept AllSame = (std::is_same_v<T, Classes> && ...);
 
 export template<ResourceType... Types> requires Utils::NonEmpty<ResourceType>
 class ResoursePack {
@@ -133,14 +145,18 @@ public:
 	ResoursePack() = delete;
 
 	template<class... Values> 
-		requires Utils::SameInts<sizeof...(Values), sizeof...(Types)>
-	constexpr explicit ResoursePack(Values... amounts) noexcept: 
+		requires Utils::SameInts<sizeof...(Values), sizeof...(Types)> && AllSame<float, Values...>
+	constexpr ResoursePack(Values... amounts) noexcept: 
 		amounts_ { (ResourceInfo<Types>{amounts})...} {
 	}
-
+	//add ctor from another?
 	template<ResourceType Type>
 	constexpr float GetRes() const {
 		return std::get<ResourceInfo<Type>>(amounts_).amount_;
+	}
+
+	constexpr ResourcePackType Get() const {
+		return amounts_;
 	}
 };
 

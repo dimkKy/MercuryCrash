@@ -48,7 +48,7 @@ public:
 	virtual float RequestFromSource(float amount) & = 0;
 
 	virtual float UnloadToTarget(float amount) const & = 0;
-	virtual ~WorkOrder() = default;
+	virtual ~WorkOrder() noexcept = default;
 };
 
 export class BuildOrder : WorkOrder {

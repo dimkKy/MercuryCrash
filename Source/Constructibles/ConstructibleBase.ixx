@@ -3,6 +3,7 @@
 export module ConstructibleBase;
 
 import Resources;
+import BalanceSettings;
 import Utils;
 
 import <tuple>;
@@ -87,7 +88,7 @@ protected:
 		status_{ status }
 	{
 		if (status_ == CS::Constructed) {
-
+			//composite_
 		}
 	}
 

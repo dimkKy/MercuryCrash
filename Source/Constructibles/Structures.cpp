@@ -66,12 +66,12 @@ float Worker::LoadFrom(float deltatime)
 	float workDone{ 0.f };
 	if (auto order{ order_.lock() }) {
 		workDone = order->RequestFromSource(
-			std::min(storage_.GetFreeSpace(), deltatime * workRate));
+			std::min(storageInitState_.GetFreeSpace(), deltatime * workRate));
 	}
 	else {
 		return deltatime;
 	}
-	storage_.ChangeAmount(-1.f * workDone);
+	storageInitState_.ChangeAmount(-1.f * workDone);
 	return deltatime - workDone / workRate;
 }
 
@@ -82,12 +82,12 @@ float Worker::AddTo(float deltatime)
 	float workDone{ 0.f };
 	if (auto order{ order_.lock() }) {
 		workDone = order->UnloadToTarget(
-			std::min(storage_.GetRes(), deltatime * workRate));
+			std::min(storageInitState_.GetRes(), deltatime * workRate));
 	}
 	else {
 		return deltatime;
 	}
-	storage_.ChangeAmount(-1.f * workDone);
+	storageInitState_.ChangeAmount(-1.f * workDone);
 	return deltatime - workDone / workRate;
 }
 
