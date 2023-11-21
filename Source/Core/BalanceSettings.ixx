@@ -12,11 +12,6 @@ import <utility>;
 import <stdexcept>;
 
 export struct BalanceInfo {
-	BuildingResPack hullInfo_{ 900.f, 500.f, 100.f };
-	BuildingResPack reactorInfo_{ 900.f, 500.f, 100.f };
-
-	BasicResPack hullHealthInit_{ 100.f, 50.f };
-	BasicResPack reactorHealthInit_{ 100.f, 50.f };
 	BasicResPack storageInitState_{ 0.f, 1000.f };
 
 	int solarPanels_{ 2 };
@@ -31,23 +26,16 @@ export struct BalanceInfo {
 	using BuildInfoPair = std::pair<BuildingResPack, BasicResPack>;
 
 	std::array<BuildInfoPair, static_cast<size_t>(ST::MAX)> buildInfos{
-		std::pair{ BuildingResPack{1.f, 1.f, 1.f}, BasicResPack{1.f, 1.f} },
-		std::pair{ BuildingResPack{1.f, 1.f, 1.f}, BasicResPack{1.f, 1.f} },
-		std::pair{ BuildingResPack{1.f, 1.f, 1.f}, BasicResPack{1.f, 1.f} },
-		std::pair{ BuildingResPack{1.f, 1.f, 1.f}, BasicResPack{1.f, 1.f} },
-		std::pair{ BuildingResPack{1.f, 1.f, 1.f}, BasicResPack{1.f, 1.f} },
-		std::pair{ BuildingResPack{1.f, 1.f, 1.f}, BasicResPack{1.f, 1.f} },
+		std::pair{ BuildingResPack{1.f, 1.f, 1.f}, BasicResPack{1.f, 1.f} }, // Battery
+		std::pair{ BuildingResPack{1.f, 1.f, 1.f}, BasicResPack{1.f, 1.f} }, // SolarPanel
+		std::pair{ BuildingResPack{900.f, 500.f, 100.f}, BasicResPack{100.f, 50.f} }, // Reactor
+		std::pair{ BuildingResPack{1.f, 1.f, 1.f}, BasicResPack{1.f, 1.f} }, // Cryochamber
+		std::pair{ BuildingResPack{900.f, 500.f, 100.f}, BasicResPack{100.f, 50.f} }, // Hull
+		std::pair{ BuildingResPack{1.f, 1.f, 1.f}, BasicResPack{1.f, 1.f} }, // Worker
 	};
 
 	constexpr BalanceInfo() noexcept = default;
 };
-
-/*constexpr BalanceInfo::BalanceInfo() noexcept :
-	hullInfo_{ 900.f, 500.f, 100.f }, reactorInfo_{ 900.f, 500.f, 100.f },
-	hullHealthInit_{ 100.f, 50.f }, reactorHealthInit_{ 100.f, 50.f },
-	storageInitState_{ 0.f, 1000.f }, solarPanels_{ 2 }, cryochambers_{ 5 },
-	batteries_{ 1 }, workers_{ 1 }, reimburseCoef_{ 0.25f, 0.5f },
-	mineAmount_{ std::numeric_limits<float>::max() } {}*/
 
 export class BalanceSettings {
 	BalanceInfo info_;
@@ -59,18 +47,16 @@ export class BalanceSettings {
 		return Get().info_;
 	}*/
 
-	[[nodiscard]] static const BalanceInfo& GetInfo() noexcept {
-		return Get().info_;
-	}
+	[[nodiscard]] static const BalanceInfo& GetInfo() noexcept;
 
 public:
-	[[nodiscard]] static BalanceSettings& Get() noexcept {
-		static BalanceSettings instance;
-		return instance;
-	}
+	[[nodiscard]] static BalanceSettings& Get() noexcept;
 
-	[[nodiscard]] static constexpr bool Verify(const BalanceInfo& info);
-	[[nodiscard]] static bool Set(const BalanceInfo& info);
+	[[nodiscard]] static constexpr bool Verify(const BalanceInfo& info) noexcept;
+	[[nodiscard]] static bool Set(const BalanceInfo& info) noexcept;
+
+	[[nodiscard]] static BasicResPack StorageInitState() noexcept;
+	[[nodiscard]] static float MineInitState() noexcept;
 
 	template<ResourceType Type>
 	[[nodiscard]] static constexpr float GetReimburseCoef() {
@@ -81,6 +67,12 @@ public:
 		(static_cast<int>(StT) < static_cast<int>(ST::MAX))
 	[[nodiscard]] static constexpr BuildingResPack MaxBuildRes() {
 		return GetInfo().buildInfos[static_cast<size_t>(StT)].first;
+	}
+
+	template<class T> requires requires 
+		{ { T::StructType } -> std::same_as<StructureType>; }
+	[[nodiscard]] static constexpr BuildingResPack MaxBuildRes() {
+		return MaxBuildRes<T::StructType>;
 	}
 
 	template<StructureType StT, ResourceType RsT> requires 
@@ -95,6 +87,12 @@ public:
 		return GetInfo().buildInfos[static_cast<size_t>(StT)].second;
 	}
 
+	template<class T> requires requires
+	{ { T::StructType } -> std::same_as<StructureType>; }
+	[[nodiscard]] static constexpr BasicResPack InitRes() {
+		return InitRes<T::StructType>;
+	}
+
 	template<StructureType StT, ResourceType RsT> requires
 		(static_cast<int>(StT) < static_cast<int>(ST::MAX))
 	[[nodiscard]] static constexpr float InitRes() {
@@ -102,7 +100,18 @@ public:
 	}
 };
 
-constexpr bool BalanceSettings::Verify(const BalanceInfo& info)
+const BalanceInfo& BalanceSettings::GetInfo() noexcept
+{
+	return Get().info_;
+}
+
+BalanceSettings& BalanceSettings::Get() noexcept
+{
+	static BalanceSettings instance;
+	return instance;
+}
+
+constexpr bool BalanceSettings::Verify(const BalanceInfo& info) noexcept
 {
 	bool isValid{ true };
 
@@ -133,7 +142,8 @@ constexpr bool BalanceSettings::Verify(const BalanceInfo& info)
 static_assert(BalanceSettings::Verify({}), 
 	"default-constructed BalanceSettingsInfo is invalid");
 
-bool BalanceSettings::Set(const BalanceInfo& info) {
+bool BalanceSettings::Set(const BalanceInfo& info) noexcept 
+{
 	if (Verify(info)) {
 		Get().info_ = info;
 		return true;
@@ -141,4 +151,14 @@ bool BalanceSettings::Set(const BalanceInfo& info) {
 	else {
 		return false;
 	}
+}
+
+BasicResPack BalanceSettings::StorageInitState() noexcept
+{
+	return GetInfo().storageInitState_;
+}
+
+float BalanceSettings::MineInitState() noexcept
+{
+	return GetInfo().mineAmount_;
 }

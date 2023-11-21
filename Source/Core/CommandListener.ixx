@@ -2,6 +2,8 @@
 
 export module CommandListener;
 
+import Ship;
+
 import <iostream>;
 import <regex>;
 import <string_view>;
@@ -45,6 +47,8 @@ using ProcessFunctionPtr = void(*)(const std::vector<std::string>&);
 using ArgIter = std::vector<std::string>::const_iterator;
 
 export class CommandListener {
+	Ship& ship_;
+
 	std::string buffer_;
 	std::vector<std::string> args_;
 
@@ -121,7 +125,8 @@ export class CommandListener {
 	}
 
 public:
-	CommandListener() {}
+	CommandListener(Ship& ship) :
+		ship_{ ship } {}
 
 	void Run(std::istream& iStream = std::cin) {
 		while (true) {

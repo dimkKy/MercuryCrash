@@ -3,14 +3,14 @@
 import <thread>;
 
 import Resources;
-//import Ship;
+import Ship;
 import CommandListener;
 
 int main()
 {
-	//Ship ship;
+	Ship ship;
+	CommandListener listener{ ship };
 
-	CommandListener listener;
 	std::jthread listenerThread{ std::ref(listener) };
 
 	return 0;

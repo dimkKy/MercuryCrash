@@ -8,48 +8,6 @@ import Utils;
 
 import <tuple>;
 
-/*class ConstructionInfoProvider {
-	ConstructionInfoProvider();
-	~ConstructionInfoProvider() = default;
-
-public:
-	static ConstructionInfoProvider& Get() {
-		static ConstructionInfoProvider instance;
-		return instance;
-	}
-
-	/*template<class T>
-	const ConstructionInfo& GetInfo() const {
-
-	}*
-};
-
-export struct ConstructionInfo {	
-	const BuildingResPack resourceToBuild_;
-	//redo
-	static constexpr BasicResPack reimburseCoef_{ 0.25f, 0.5f };
-
-	template<typename... Args>
-	constexpr ConstructionInfo(Args&&... args) :
-		resourceToBuild_{ std::forward<Args>(args)... } {}
-
-	/*constexpr ConstructionInfo(float com, float con, float t, float reimburseCoef = 0.5f) :
-		resourceToBuild_{ com,  con, t },
-		reimburseCoef_{ /*reimburseCoef*0.5f } {}*
-
-	template<ResourceType Type>
-	[[nodiscard]] float GetRes() const & noexcept {
-		return resourceToBuild_.GetRes<Type>();
-	}
-
-
-
-	/*template<ResourceType Type>
-	float GetRes() const {
-		return resourceToBuild_.GetRes<Type>();
-	}*
-};*/
-
 enum class ConstructionStatus {
 	Building,
 	Constructed,

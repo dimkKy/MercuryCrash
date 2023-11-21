@@ -4,6 +4,7 @@ export module Structures;
 export import Structures.Types;
 
 import ConstructibleBase;
+import BalanceSettings;
 
 import <tuple>;
 import <memory>;
@@ -11,8 +12,17 @@ import <memory>;
 export template <StructureType Type> class Structure
 {
 	static_assert(sizeof(this) < 0, "specialization use is required");
-	Structure() = default;
 };
+
+#define DEFINE_ST_CTORS(_name_);							\
+	template<typename... Args>								\
+	constexpr Structure<(_name_)>(Args&&... args) :			\
+	ConstructibleBase{ std::forward<Args>(args)... } {}		\
+															\
+	constexpr Structure<(_name_)>() :						\
+	Structure<(_name_)>{									\
+		BalanceSettings::MaxBuildRes<(_name_)>(),			\
+			BalanceSettings::InitRes<(_name_)>() } {}
 
 template<>
 class Structure<ST::Battery> : public ConstructibleBase
@@ -72,11 +82,7 @@ template<>
 class Structure<ST::Reactor> : public ConstructibleBase
 {
 public:
-	//Structure<ST::Reactor>(const BasicResPack& current) :
-		//ConstructibleBase(info, current) {}
-	template<typename... Args>
-	constexpr Structure<ST::Reactor>(Args&&... args) :
-		ConstructibleBase{ std::forward<Args>(args)... } {}
+	DEFINE_ST_CTORS(ST::Reactor);
 };
 export using Reactor = Structure<ST::Reactor>;
 
@@ -85,11 +91,7 @@ class Structure<ST::Hull> : public ConstructibleBase
 {
 
 public:
-	//Structure<ST::Hull>(const BasicResPack& current) :
-		//ConstructibleBase(info, current) {}
-	template<typename... Args>
-	constexpr Structure<ST::Hull>(Args&&... args) :
-		ConstructibleBase{ std::forward<Args>(args)... } {}
+	DEFINE_ST_CTORS(ST::Hull);
 };
 export using Hull = Structure<ST::Hull>;
 

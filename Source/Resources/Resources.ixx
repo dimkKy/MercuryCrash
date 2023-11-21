@@ -132,8 +132,6 @@ public:
 		return _type.load();
 	};
 };
-template<class T, class... Classes>
-concept AllSame = (std::is_same_v<T, Classes> && ...);
 
 export template<ResourceType... Types> requires Utils::NonEmpty<ResourceType>
 class ResoursePack {
@@ -145,7 +143,8 @@ public:
 	ResoursePack() = delete;
 
 	template<class... Values> 
-		requires Utils::SameInts<sizeof...(Values), sizeof...(Types)> && AllSame<float, Values...>
+		requires Utils::AllSame<float, Values...> && 
+			Utils::SameInts<sizeof...(Values), sizeof...(Types)>
 	constexpr ResoursePack(Values... amounts) noexcept: 
 		amounts_ { (ResourceInfo<Types>{amounts})...} {
 	}
