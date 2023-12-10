@@ -38,17 +38,21 @@ export class ConstructibleBase
 	//container to 
 
 protected:
-	constexpr ConstructibleBase(const BuildingResPack& max, ConstructionStatus status) :
+
+	constexpr ConstructibleBase(const BuildingResPack& max) :
 		//constructionInfo_{ max }, 
 		composite_{ max.GetRes<RT::Composite>()},
 		conductor_{ max.GetRes<RT::Conductor>()},
-		timer_{ max.GetRes<RT::Time>()},
-		status_{ status }
+		timer_{ max.GetRes<RT::Time>()}
 	{
 		if (status_ == CS::Constructed) {
 			//composite_
 		}
 	}
+
+	constexpr ConstructibleBase(const ConstructibleBase& other) noexcept = default;
+
+	static constexpr ConstructibleBase GetConstructed(const BuildingResPack& max);
 
 	constexpr ConstructibleBase(const BuildingResPack& max, const BasicResPack& current) :
 		//constructionInfo_{ max },
@@ -59,7 +63,7 @@ protected:
 
 	}
 
-	bool FinishBuilding()& {
+	constexpr bool FinishBuilding()& {
 		switch (status_) {
 		case CS::Constructed:
 			return true;
@@ -91,3 +95,10 @@ public:
 
 	virtual ~ConstructibleBase() = default;
 };
+
+constexpr ConstructibleBase ConstructibleBase::GetConstructed(const BuildingResPack& max)
+{
+	ConstructibleBase res{ max, max };
+	res.FinishBuilding();
+	return res;
+}

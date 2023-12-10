@@ -17,9 +17,7 @@ struct ResourceInfo {
 	float amount_;
 	
 	constexpr ResourceInfo(float amount = 0.f) noexcept:
-		amount_{ amount } 
-	{
-	};
+		amount_{ amount } {};
 };
 
 //ADD NON-ATOMIC?
@@ -40,9 +38,21 @@ protected:
 		}
 	};
 
+	constexpr Container(const Container& other) noexcept :
+		amount_{ other.amount_.load(std::memory_order_relaxed) }, range_{ other.range_ }
+	{};
+
+	//delete?
+	Container& operator=(const Container& other) noexcept
+	{
+		range_ = other.range_;
+		amount_.store(other.amount_.load(std::memory_order_relaxed), std::memory_order_relaxed);
+		return *this;
+	}
+
 public:
 	using AmountType = decltype(amount_)::value_type;
-	const float range_;
+	float range_;
 
 	Container() = delete;
 	virtual ~Container() = default;
@@ -83,6 +93,8 @@ public:
 	using Container::AmountType;
 
 	ContainerT() = delete;
+
+	constexpr ContainerT(const ContainerT& other) noexcept = default;
 
 	constexpr ContainerT(float range, float amount = 0.f) :
 		Container(range, amount)
@@ -139,23 +151,47 @@ class ResoursePack {
 
 public:
 	ResourcePackType amounts_;
-	
+
 	ResoursePack() = delete;
 
 	template<class... Values> 
 		requires Utils::AllSame<float, Values...> && 
 			Utils::SameInts<sizeof...(Values), sizeof...(Types)>
 	constexpr ResoursePack(Values... amounts) noexcept: 
-		amounts_ { (ResourceInfo<Types>{amounts})...} {
+		amounts_ { (ResourceInfo<Types>{amounts})...} {}
+
+	template<ResourceType... OtherTypes>
+	constexpr ResoursePack(const ResoursePack<OtherTypes...>& other) noexcept {
+		(SetRes<Types>(other.GetRes<Types>()), ...);
 	}
-	//add ctor from another?
+
+	template<ResourceType... OtherTypes>
+	constexpr ResoursePack& operator=(const ResoursePack<OtherTypes...>& other) noexcept
+		requires std::same_as<ResourcePackType, ResoursePack<OtherTypes...>::ResourcePackType> {
+		(SetRes<Types>(other.GetRes<Types>()), ...);
+		return *this;
+	}
+
 	template<ResourceType Type>
-	constexpr float GetRes() const {
+	constexpr float GetRes() const noexcept {
+		return 0.f;
+	}
+
+	template<ResourceType Type>
+	constexpr float GetRes() const noexcept requires
+		requires{ std::get<ResourceInfo<Type>>(amounts_); } {
 		return std::get<ResourceInfo<Type>>(amounts_).amount_;
 	}
 
-	constexpr ResourcePackType Get() const {
+	constexpr ResourcePackType Get() const noexcept {
 		return amounts_;
+	}
+
+protected:
+	template<ResourceType Type>
+	constexpr void SetRes(float amount) noexcept requires
+		requires{ std::get<ResourceInfo<Type>>(amounts_); } {
+		std::get<ResourceInfo<Type>>(amounts_).amount_ = amount;
 	}
 };
 

@@ -10,7 +10,7 @@ int main()
 {
 	Ship ship;
 	CommandListener listener{ ship };
-
+	//ResoursePack pack;
 	std::jthread listenerThread{ std::ref(listener) };
 
 	return 0;

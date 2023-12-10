@@ -59,9 +59,11 @@ public:
 	[[nodiscard]] static float MineInitState() noexcept;
 
 	template<ResourceType Type>
-	[[nodiscard]] static constexpr float GetReimburseCoef() {
-		return GetInfo().reimburseCoef_.GetRes<Type>();
-	} 
+	[[nodiscard]] static constexpr float GetReimburseCoef() noexcept;
+
+	template<StructureType Type>
+	[[nodiscard]] static int InitStructureCount() noexcept;
+
 	//are requireses required?
 	template<StructureType StT> requires
 		(static_cast<int>(StT) < static_cast<int>(ST::MAX))
@@ -107,7 +109,7 @@ const BalanceInfo& BalanceSettings::GetInfo() noexcept
 
 BalanceSettings& BalanceSettings::Get() noexcept
 {
-	static BalanceSettings instance;
+	static BalanceSettings instance{};
 	return instance;
 }
 
@@ -137,6 +139,9 @@ constexpr bool BalanceSettings::Verify(const BalanceInfo& info) noexcept
 
 	isValid = std::apply(buildInfosChecker, info.buildInfos);
 
+	isValid = info.batteries_ >= 1 && info.cryochambers_ >= 0 && 
+		info.solarPanels_ >= 1 && info.workers_ >= 1;
+
 	return isValid;
 }
 static_assert(BalanceSettings::Verify({}), 
@@ -161,4 +166,41 @@ BasicResPack BalanceSettings::StorageInitState() noexcept
 float BalanceSettings::MineInitState() noexcept
 {
 	return GetInfo().mineAmount_;
+}
+
+template<ResourceType Type>
+constexpr float BalanceSettings::GetReimburseCoef() noexcept
+{
+	return GetInfo().reimburseCoef_.GetRes<Type>();
+}
+
+template<StructureType Type>
+int BalanceSettings::InitStructureCount() noexcept
+{
+	static_assert(Type != StructureType::ST_MAX, "Invalid structure type");
+	return 1;
+}
+
+template<>
+int BalanceSettings::InitStructureCount<ST::Battery>() noexcept
+{
+	return GetInfo().batteries_;
+}
+
+template<>
+int BalanceSettings::InitStructureCount<ST::Cryochamber>() noexcept
+{
+	return GetInfo().cryochambers_;
+}
+
+template<>
+int BalanceSettings::InitStructureCount<ST::SolarPanel>() noexcept
+{
+	return GetInfo().solarPanels_;
+}
+
+template<>
+int BalanceSettings::InitStructureCount<ST::Worker>() noexcept
+{
+	return GetInfo().workers_;
 }

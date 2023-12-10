@@ -37,12 +37,11 @@ export class Ship {
 
 public:
 	Ship() {
-		/*for (int i{ 0 }; i < state.workers_; ++i) {
-			//add worker
-			workers_.emplace_back();
+		for (int i{ 0 }; i < BalanceSettings::InitStructureCount<ST::SolarPanel>(); ++i) {
+			//AddStructure<ST::SolarPanel>();
 		}
 
-		for (int i{ 0 }; i < state.solarPanels_; ++i) {
+		/*for (int i{ 0 }; i < state.solarPanels_; ++i) {
 			solarPanels_.emplace_back();
 		}
 
