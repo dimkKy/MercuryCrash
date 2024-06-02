@@ -98,7 +98,7 @@ public:
 
 constexpr ConstructibleBase ConstructibleBase::GetConstructed(const BuildingResPack& max)
 {
-	ConstructibleBase res{ max, max };
+	ConstructibleBase res{ max };
 	res.FinishBuilding();
 	return res;
 }

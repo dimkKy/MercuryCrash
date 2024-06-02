@@ -50,6 +50,9 @@ export namespace Utils {
 	template <class TDerived, template<typename> typename TBase>
 	concept ChildOfAny = is_derived_from_any_v<TDerived, TBase>;
 
+	template<typename T, typename... Args> 
+	constexpr inline bool is_in_pack_v = (std::is_same_v<T, Args> || ...);
+
 	template <class Callable, class FArg>
 	constexpr void ApplyToEach(Callable&& foo, FArg&& fArg) noexcept(
 		noexcept(std::invoke(std::forward<Callable>(foo), std::forward<FArg>(fArg)))) 

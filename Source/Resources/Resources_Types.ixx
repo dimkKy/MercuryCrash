@@ -11,9 +11,9 @@ export enum class ResourceType {
 };
 
 export namespace RT {
-	inline constexpr ResourceType Heat{ ResourceType::Heat };
-	inline constexpr ResourceType Composite{ ResourceType::Composite };
-	inline constexpr ResourceType Conductor{ ResourceType::Conductor };
-	inline constexpr ResourceType Power{ ResourceType::Power };
-	inline constexpr ResourceType Time{ ResourceType::Time };
+	inline constexpr const ResourceType Heat{ ResourceType::Heat };
+	inline constexpr const ResourceType Composite{ ResourceType::Composite };
+	inline constexpr const ResourceType Conductor{ ResourceType::Conductor };
+	inline constexpr const ResourceType Power{ ResourceType::Power };
+	inline constexpr const ResourceType Time{ ResourceType::Time };
 }

@@ -14,6 +14,41 @@ import <memory>;
 
 constexpr auto maxfloat = std::numeric_limits<float>::max;
 
+template<typename T>
+concept Tickable = requires (T t, float f) { t.Tick(f); };
+
+export template<Tickable T>
+class TickOperator {
+	std::list<int> list;
+	using Iter = decltype(list)::iterator;
+public:
+	void Run() {
+		while (true /*and not empty*/) {
+			//const std::lock_guard<std::mutex> lock(g_i_mutex);
+			// 
+			//tick all the workers
+	
+			//mutex +
+			//check not empty
+			Iter begin = list.begin();
+			auto elem = *begin;
+
+			for (auto&& elem : list) {
+				//elem.Tick
+			}
+			//mutex -
+			//process elem
+
+			//get next
+
+		}
+	}
+
+	void operator()() {
+		Run();
+	}
+};
+
 export class Ship {
 	Hull hull_;
 	Reactor reactor_;
@@ -58,20 +93,7 @@ public:
 	std::weak_ptr<Structure<Type>> AddStructure()& {
 
 	}
+
+	constexpr void Start();
 };
 
-export class TickOperator {
-
-public:
-	void Run() {
-		while (true) {
-			//tick all the workers
-
-
-		}
-	}
-
-	void operator()() {
-		Run();
-	}
-};

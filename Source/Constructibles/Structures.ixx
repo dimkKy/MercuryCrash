@@ -24,6 +24,7 @@ export template <StructureType Type> class Structure
 		BalanceSettings::MaxBuildRes<(_name_)>(),			\
 			BalanceSettings::InitRes<(_name_)>() } {}
 
+//do I even need that class
 template<>
 class Structure<ST::Battery> : public ConstructibleBase
 {
@@ -56,20 +57,24 @@ class Structure<ST::Cryochamber>
 
 	static inline float heatingRate{ 1.f };
 	static inline float coolingRate{ 1.f };
+
 public:
 	template<typename... Args>
 	constexpr Structure<ST::Cryochamber>(Args&&... args) :
 		ConstructibleBase{ std::forward<Args>(args)... } {}
 
 	void Tick(float deltatime)& {
+		float avPower{ std::min(powerStorage_.GetRes(), deltatime * coolingRate) };
+		powerStorage_.ChangeAmount(-1.f * avPower);
 
-		//float p = get power(deltatime)
-		//remove heat (p * coolingRate)
+		float heatChange{ deltatime * heatingRate - avPower };
+		float heatChanged{ heatStorage_.ChangeAmount(heatChange) };
 
-		//add heat (heating rate * deltatime)
-		//check heat
+		if (heatChanged > +0.f && heatChanged < heatChange) {
+			//overheat
+		}
 	}
-
+	//callback foo
 	//add energy?
 };
 export using Cryochamber = Structure<ST::Cryochamber>;
